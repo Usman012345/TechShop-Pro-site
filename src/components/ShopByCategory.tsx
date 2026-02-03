@@ -1,0 +1,213 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { X, ArrowRight } from "lucide-react";
+import { categories, type CategoryId, activeProductsByCategory } from "@/data/shop";
+import { whatsappLink } from "@/data/site";
+import { Icons } from "@/components/icons";
+import { cn } from "@/lib/utils";
+
+function categoryCount(id: CategoryId) {
+  return activeProductsByCategory(id).length;
+}
+
+function productMessage(productName: string) {
+  return `السلام عليكم
+${productName}`;
+}
+
+export function ShopByCategory() {
+  const [openCategory, setOpenCategory] = useState<CategoryId | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  const activeCategory = useMemo(
+    () => categories.find((c) => c.id === openCategory) ?? null,
+    [openCategory]
+  );
+
+  const items = useMemo(() => {
+    if (!openCategory) return [];
+    return activeProductsByCategory(openCategory);
+  }, [openCategory]);
+
+  // Close on ESC + lock scroll while modal is open.
+  useEffect(() => {
+    if (!openCategory) return;
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpenCategory(null);
+    };
+    window.addEventListener("keydown", onKey);
+
+    const prevOverflow = document.body.style.overflow;
+    const prevPadding = document.body.style.paddingRight;
+
+    // Prevent content shift on desktop when scrollbar disappears.
+    const scrollbarW = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = "hidden";
+    if (scrollbarW > 0) document.body.style.paddingRight = `${scrollbarW}px`;
+
+    // Focus close button (accessibility).
+    const t = window.setTimeout(() => closeBtnRef.current?.focus(), 50);
+
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+      document.body.style.paddingRight = prevPadding;
+      window.clearTimeout(t);
+    };
+  }, [openCategory]);
+
+  return (
+    <section id="categories" className="mt-12 scroll-mt-24">
+      <div className="flex flex-col items-start justify-between gap-3 md:flex-row md:items-end">
+        <div>
+          <h2 className="font-display text-xl md:text-2xl">Shop by category</h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted">
+            Tap a category to open a clean popup with branded product cards — fast, responsive, and
+            built for a premium first impression.
+          </p>
+        </div>
+        <a
+          href="#contact"
+          className="inline-flex items-center gap-2 text-sm text-gold2/80 hover:text-gold2"
+        >
+          Need something else? Contact <ArrowRight size={16} />
+        </a>
+      </div>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {categories.map((c) => {
+          const Icon = Icons[c.iconName];
+          const count = categoryCount(c.id);
+          return (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setOpenCategory(c.id)}
+              className={cn(
+                "group relative overflow-hidden rounded-2xl border border-fg/10 bg-panel/45 p-5 text-left shadow-lg sheen",
+                "transition hover:border-gold/25 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
+              )}
+            >
+              <div
+                className="pointer-events-none absolute inset-0 opacity-60"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(600px circle at 0% 0%, rgba(212,175,55,0.20), transparent 55%)",
+                }}
+                aria-hidden="true"
+              />
+              <div className="relative flex items-start gap-3">
+                <span className="grid h-11 w-11 place-items-center rounded-xl border border-gold/25 bg-bg/35 text-gold2 shadow-gold">
+                  <Icon size={18} />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-sm text-fg/95">{c.name}</div>
+                  <div className="mt-1 text-xs text-muted">{c.description}</div>
+                  <div className="mt-3 text-xs text-gold2/80">
+                    {count} item{count === 1 ? "" : "s"} →
+                  </div>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Modal */}
+      {openCategory && activeCategory ? (
+        <div className="fixed inset-0 z-[80]">
+          <button
+            type="button"
+            onClick={() => setOpenCategory(null)}
+            className="absolute inset-0 bg-bg/70 backdrop-blur-sm"
+            aria-label="Close category popup"
+          />
+
+          <div className="relative mx-auto mt-16 w-[min(1100px,92vw)] overflow-hidden rounded-3xl border border-fg/10 bg-panel/70 shadow-2xl">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-70"
+              style={{
+                backgroundImage:
+                  "radial-gradient(900px circle at 20% 0%, rgba(212,175,55,0.18), transparent 60%), radial-gradient(700px circle at 80% 10%, rgba(255,214,102,0.12), transparent 55%)",
+              }}
+              aria-hidden="true"
+            />
+
+            <header className="relative flex items-center justify-between gap-3 border-b border-fg/10 bg-bg/35 px-5 py-4 backdrop-blur">
+              <div className="min-w-0">
+                <div className="text-xs uppercase tracking-[0.30em] text-muted">
+                  Category
+                </div>
+                <h3 className="mt-1 truncate font-display text-xl text-gold2">
+                  {activeCategory.name}
+                </h3>
+              </div>
+
+              <button
+                ref={closeBtnRef}
+                type="button"
+                onClick={() => setOpenCategory(null)}
+                className="grid h-10 w-10 place-items-center rounded-full border border-fg/10 bg-panel/40 text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
+                aria-label="Close popup"
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            <div className="relative max-h-[75vh] overflow-auto p-5 md:p-6">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {items.map((p) => (
+                  <article
+                    key={p.id}
+                    className="group relative overflow-hidden rounded-2xl border border-fg/10 bg-bg/30 p-5 shadow-lg transition hover:border-gold/25"
+                  >
+                    {/* Brand logo watermark */}
+                    <div
+                      className="pointer-events-none absolute inset-0 opacity-25"
+                      aria-hidden="true"
+                    >
+                      <img
+                        src={p.logo}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-contain p-8 opacity-90"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-bg/35 to-bg/80" />
+                    </div>
+
+                    <div className="relative">
+                      <div className="font-display text-lg leading-snug">
+                        {p.name}
+                      </div>
+
+                      <div className="mt-4">
+                        <a
+                          href={whatsappLink(productMessage(p.name))}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex w-full items-center justify-center rounded-full border border-gold/30 bg-gold/15 px-4 py-2 text-sm text-gold2 shadow-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
+                        >
+                          Contact
+                        </a>
+                        <div className="mt-2 text-center text-xs text-muted">
+                          Multiple plans available
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-fg/10 bg-bg/25 p-4 text-xs text-muted">
+                Tip: Click <span className="text-gold2">Contact</span> to open WhatsApp with a pre‑filled message.
+                You can also call from the contact section below.
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}

@@ -1,0 +1,135 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Black + Gold theme tokens (RGB triplets for Tailwind alpha support) */
+  --bg: 6 6 8;
+  --panel: 14 14 18;
+  --fg: 246 246 246;
+  --muted: 165 165 175;
+
+  /* Gold accents */
+  --gold: 212 175 55;
+  --gold2: 255 214 102;
+  --ring: 212 175 55;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+/* Avoid accidental horizontal scroll from glows/blur on small screens */
+body {
+  overflow-x: hidden;
+}
+
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--fg));
+}
+
+::selection {
+  background: rgb(var(--gold) / 0.25);
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+/* Subtle noise (very light) */
+.noise {
+  position: relative;
+}
+.noise::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image: url("/noise.png");
+  background-repeat: repeat;
+  mix-blend-mode: overlay;
+}
+
+/* Mobile performance: blending full-page textures can cause scroll jitter on some devices */
+@media (max-width: 640px) {
+  .noise::before {
+    opacity: 0.035;
+    mix-blend-mode: normal;
+  }
+}
+
+/* Card sheen effect */
+.sheen {
+  position: relative;
+  overflow: hidden;
+}
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background-image: linear-gradient(110deg, transparent 0%, rgb(var(--gold2) / 0.18) 35%, transparent 70%);
+  transform: translateX(-60%) rotate(10deg);
+  opacity: 0;
+  transition: transform 600ms ease, opacity 400ms ease;
+}
+.sheen:hover::after,
+.sheen:focus-within::after {
+  transform: translateX(60%) rotate(10deg);
+  opacity: 1;
+}
+
+/* Nice scrollbars (optional) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--gold) / 0.4) rgb(var(--panel) / 0.8);
+}
+*::-webkit-scrollbar {
+  width: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: rgb(var(--panel) / 0.6);
+}
+*::-webkit-scrollbar-thumb {
+  background: rgb(var(--gold) / 0.35);
+  border-radius: 999px;
+  border: 2px solid rgb(var(--panel) / 0.85);
+}
+
+
+/* Smooth anchor scrolling (disable if user prefers reduced motion) */
+html {
+  scroll-behavior: smooth;
+  /* Prevent layout shifts when overlays lock scroll on desktop */
+  scrollbar-gutter: stable;
+}
+
+/* Hero glow float animations (CSS-only, very light) */
+@keyframes floatSlow {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -18px, 0); }
+}
+@keyframes floatSlow2 {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, 14px, 0); }
+}
+.animate-floatSlow {
+  animation: floatSlow 10s ease-in-out infinite;
+}
+.animate-floatSlow2 {
+  animation: floatSlow2 12s ease-in-out infinite;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-floatSlow,
+  .animate-floatSlow2 {
+    animation: none !important;
+  }
+  .sheen::after {
+    transition: none;
+  }
+}
