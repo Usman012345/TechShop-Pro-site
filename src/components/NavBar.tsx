@@ -1,4 +1,4 @@
-import { site, whatsappLink } from "@/data/site";
+import { site, WHATSAPP_GROUP_LINK, whatsappLink } from "@/data/site";
 import { LogoMark } from "@/components/LogoMark";
 
 export function NavBar() {
@@ -37,6 +37,16 @@ export function NavBar() {
             aria-label="Open WhatsApp chat"
           >
             WhatsApp
+          </a>
+
+          <a
+            href={WHATSAPP_GROUP_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full border border-fg/10 bg-panel/40 px-3 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:px-4 sm:text-sm"
+            aria-label="Open WhatsApp group"
+          >
+            WhatsApp Group
           </a>
         </div>
       </div>

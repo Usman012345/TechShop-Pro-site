@@ -14,9 +14,6 @@ export function TrustedSupport() {
             Fast responses and clear communication — WhatsApp for quick chats, or call for details.
           </p>
         </div>
-        <div className="text-xs uppercase tracking-[0.30em] text-gold2/70">
-          Responsive • Clean • Premium
-        </div>
       </div>
 
       <div className="mt-6 grid gap-4 md:grid-cols-3">

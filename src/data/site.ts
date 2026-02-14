@@ -5,14 +5,17 @@ export const CONTACT = {
   email: "c54003732@gmail.com",
 };
 
+// WhatsApp group invite (public link)
+export const WHATSAPP_GROUP_LINK =
+  "https://chat.whatsapp.com/FicksX7Z9HB7xPGJr4a6kj?mode=gi_t";
+export const WHATSAPP_GROUP_QR = "/whatsapp-group-qr.png";
+
 export function whatsappLink(message: string) {
   return `https://wa.me/${CONTACT.phoneE164}?text=${encodeURIComponent(message)}`;
 }
 
 export const site = {
   name: "TechShop Pro",
-  tagline:
-    "A cinematic black & gold storefront demo — designed to wow customers and showcase premium UI.",
   description:
     "A one‑page, mobile‑first TechShop Pro demo with category popups, branded product cards, and smooth performance — deployable on Vercel free tier.",
   // Replace after deploy (used for metadata + sitemap). Keep without trailing slash.

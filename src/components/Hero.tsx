@@ -31,15 +31,9 @@ export function Hero() {
         <h1 className="mt-4 font-display text-3xl leading-tight md:text-5xl">
           {site.name}{" "}
           <span className="bg-gradient-to-r from-gold2 to-gold bg-clip-text text-transparent">
-            premium storefront demo
-          </span>{" "}
-          for modern digital shops.
+            premium storefront
+          </span>
         </h1>
-
-        <p className="mt-4 text-sm text-muted md:text-base">
-          A one‑page experience with category popups, branded product cards, and performance‑safe visuals —
-          perfect for showcasing your web design skills to real clients.
-        </p>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <a
@@ -67,10 +61,7 @@ export function Hero() {
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2 text-xs text-muted">
-          <span className="rounded-full border border-fg/10 bg-bg/35 px-3 py-1">Responsive</span>
-          <span className="rounded-full border border-fg/10 bg-bg/35 px-3 py-1">One-page</span>
-          <span className="rounded-full border border-fg/10 bg-bg/35 px-3 py-1">Vercel-ready</span>
-          <span className="rounded-full border border-fg/10 bg-bg/35 px-3 py-1">No price clutter</span>
+          <span className="rounded-full border border-fg/10 bg-bg/35 px-3 py-1">Contact for prices</span>
         </div>
       </div>
     </section>

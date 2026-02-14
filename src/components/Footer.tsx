@@ -1,4 +1,4 @@
-import { CONTACT, site, whatsappLink } from "@/data/site";
+import { CONTACT, site, WHATSAPP_GROUP_LINK, whatsappLink } from "@/data/site";
 import { LogoMark } from "@/components/LogoMark";
 
 export function Footer() {
@@ -13,7 +13,6 @@ export function Footer() {
                 {site.name}
               </div>
             </div>
-            <p className="mt-3 max-w-sm text-sm text-muted">{site.tagline}</p>
           </div>
 
           <div className="grid gap-2 text-sm">
@@ -41,6 +40,14 @@ export function Footer() {
               rel="noopener noreferrer"
             >
               WhatsApp
+            </a>
+            <a
+              className="text-fg/80 hover:text-fg"
+              href={WHATSAPP_GROUP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              WhatsApp Group
             </a>
             <a className="text-fg/80 hover:text-fg" href={`tel:${CONTACT.phoneDisplay}`}>
               Call: {CONTACT.phoneDisplay}

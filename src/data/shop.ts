@@ -110,6 +110,8 @@ export const products: Product[] = [
 
   // Utilities
   { id: "ut-idm", name: "Internet Download Manager", categoryId: "utilities", logo: "/logos/idm.svg", isActive: true },
+  { id: "ut-wise-care-365", name: "Wise Care 365", categoryId: "utilities", logo: "/logos/wise-care-365.svg", isActive: true },
+  { id: "ut-action-screen-recorder", name: "Action Screen Recorder", categoryId: "utilities", logo: "/logos/action-screen-recorder.svg", isActive: true },
 
   // Writing
   { id: "wr-grammarly", name: "Grammarly", categoryId: "writing", logo: "/logos/grammarly.svg", isActive: true },

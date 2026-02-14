@@ -1,22 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-
-type Point = { x: number; y: number; vx: number; vy: number };
+import { useEffect, useRef, useState } from "react";
+import ParticleBackground from "@/components/ParticleBackground";
 
 const TARGET_TEXT = "TechShop.Pro";
-const DURATION_MS = 5000;
-const FADE_MS = 600;
 
-function prefersReducedMotion() {
-  if (typeof window === "undefined") return false;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
+// The splash should be fully gone after exactly 5 seconds.
+const DURATION_MS = 5000;
+
+// Characters should only begin forming the real word in the LAST second.
+const REVEAL_MS = 1000;
+
+// Keep a quick fade at the end but still finish within the 5s budget.
+const FADE_MS = 250;
 
 export function IntroSplash() {
   const [hidden, setHidden] = useState(false);
   const [fading, setFading] = useState(false);
-  const [text, setText] = useState("............"); // length matches TARGET_TEXT (12)
+  // Keep the same character count as TARGET_TEXT (12) to prevent layout shifts.
+  const [text, setText] = useState("............");
 
   // Preserve body styles so we can lock/unlock scroll without causing layout shifts.
   const bodyPrevRef = useRef<{ overflow: string; paddingRight: string } | null>(
@@ -26,17 +28,11 @@ export function IntroSplash() {
   const fadingRef = useRef(false);
   const finishRef = useRef<null | (() => void)>(null);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const barRef = useRef<HTMLDivElement | null>(null);
 
   const rafRef = useRef<number>(0);
-  const scrambleRef = useRef<number>(0);
+  const lastTextTickRef = useRef<number>(0);
   const startRef = useRef<number>(0);
-  const pointsRef = useRef<Point[]>([]);
-  const sizeRef = useRef({ w: 0, h: 0 });
-
-  // Only used to gate heavy motion; does NOT affect initial HTML markup.
-  const reduced = useMemo(() => prefersReducedMotion(), []);
 
   useEffect(() => {
     // Lock scroll while the splash is visible, then restore.
@@ -75,152 +71,27 @@ export function IntroSplash() {
   useEffect(() => {
     if (hidden) return;
 
-    // Text scramble effect (client-only).
+    const bar = barRef.current;
+    if (!bar) return;
+
     const chars =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=<>?/[]{}|~";
 
-    let iterations = 0;
+    const revealStartMs = Math.max(0, DURATION_MS - REVEAL_MS);
+    const fadeStartMs = Math.max(0, DURATION_MS - FADE_MS);
+    // Finish the word formation by the time fading begins so the full title is
+    // clearly visible before the splash disappears.
+    const revealEndMs = fadeStartMs;
+    const revealSpanMs = Math.max(1, revealEndMs - revealStartMs);
 
-    scrambleRef.current = window.setInterval(() => {
-      iterations += 1 / 3;
-
-      setText(() =>
-        TARGET_TEXT.split("")
-          .map((ch, i) => {
-            if (i < iterations) return ch;
-            return chars[Math.floor(Math.random() * chars.length)];
-          })
-          .join("")
-      );
-
-      if (iterations >= TARGET_TEXT.length) {
-        window.clearInterval(scrambleRef.current);
-        setText(TARGET_TEXT);
-      }
-    }, 30) as unknown as number;
-
-    return () => {
-      window.clearInterval(scrambleRef.current);
-    };
-  }, [hidden]);
-
-  useEffect(() => {
-    if (hidden) return;
-
-    const canvas = canvasRef.current;
-    const bar = barRef.current;
-    if (!canvas || !bar) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const createPoints = (w: number, h: number) => {
-      // Keep the effect light on mobile by capping the point count.
-      const count = Math.max(22, Math.min(60, Math.floor((w * h) / 24000)));
-      const pts: Point[] = [];
-      for (let i = 0; i < count; i++) {
-        const speed = 0.14 + Math.random() * 0.28;
-        const ang = Math.random() * Math.PI * 2;
-        pts.push({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          vx: Math.cos(ang) * speed,
-          vy: Math.sin(ang) * speed,
-        });
-      }
-      return pts;
-    };
-
-    const resize = () => {
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-
-      sizeRef.current = { w, h };
-
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      canvas.style.width = `${w}px`;
-      canvas.style.height = `${h}px`;
-
-      // Reset transform so our drawing coords are in CSS pixels.
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-      pointsRef.current = createPoints(w, h);
-    };
-
-    const draw = () => {
-      const { w, h } = sizeRef.current;
-      const pts = pointsRef.current;
-
-      ctx.clearRect(0, 0, w, h);
-
-      // Background fade (helps the “glow” feel)
-      const bg = ctx.createRadialGradient(
-        w * 0.5,
-        h * 0.35,
-        0,
-        w * 0.5,
-        h * 0.35,
-        Math.max(w, h)
-      );
-      bg.addColorStop(0, "rgba(212,175,55,0.08)");
-      bg.addColorStop(0.55, "rgba(6,6,8,0.0)");
-      bg.addColorStop(1, "rgba(6,6,8,0.0)");
-      ctx.fillStyle = bg;
-      ctx.fillRect(0, 0, w, h);
-
-      const threshold = Math.min(170, Math.max(110, w * 0.15));
-      const threshold2 = threshold * threshold;
-
-      ctx.lineCap = "round";
-
-      // Lines
-      for (let i = 0; i < pts.length; i++) {
-        for (let j = i + 1; j < pts.length; j++) {
-          const a = pts[i];
-          const b = pts[j];
-          const dx = a.x - b.x;
-          const dy = a.y - b.y;
-          const dist2 = dx * dx + dy * dy;
-          if (dist2 > threshold2) continue;
-
-          const dist = Math.sqrt(dist2);
-          const t = 1 - dist / threshold;
-          const alpha = t * 0.35;
-
-          // Soft glow layer
-          ctx.strokeStyle = `rgba(212,175,55,${alpha * 0.22})`;
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
-
-          // Crisp core line
-          ctx.strokeStyle = `rgba(212,175,55,${alpha})`;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(a.x, a.y);
-          ctx.lineTo(b.x, b.y);
-          ctx.stroke();
-        }
-      }
-
-      // Dots
-      for (const p of pts) {
-        // Outer glow
-        ctx.fillStyle = "rgba(255,214,102,0.14)";
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 5.2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Dot core
-        ctx.fillStyle = "rgba(255,214,102,0.90)";
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
+    const buildScramble = (lockedCount: number) => {
+      const maxLocked = Math.max(0, Math.min(TARGET_TEXT.length, lockedCount));
+      return TARGET_TEXT.split("")
+        .map((ch, i) => {
+          if (i < maxLocked) return ch;
+          return chars[Math.floor(Math.random() * chars.length)];
+        })
+        .join("");
     };
 
     const finish = () => {
@@ -228,8 +99,8 @@ export function IntroSplash() {
       fadingRef.current = true;
 
       window.cancelAnimationFrame(rafRef.current);
-      window.clearInterval(scrambleRef.current);
 
+      // Snap to final state and fade out quickly.
       setText(TARGET_TEXT);
       setFading(true);
 
@@ -246,44 +117,50 @@ export function IntroSplash() {
       // Progress bar: DOM write (no React re-render)
       bar.style.transform = `scaleX(${p})`;
 
-      if (!reduced) {
-        const { w, h } = sizeRef.current;
-        const pts = pointsRef.current;
+      // Text:
+      // - First 4 seconds: fully scrambled.
+      // - Last 1 second: letters lock into place.
+      // Throttle updates to avoid re-rendering every single frame.
+      if (!fadingRef.current && t - lastTextTickRef.current > 45) {
+        lastTextTickRef.current = t;
 
-        // Move points (cheap physics)
-        for (const pt of pts) {
-          pt.x += pt.vx;
-          pt.y += pt.vy;
-
-          // Wrap edges (prevents “sticking”)
-          if (pt.x < -20) pt.x = w + 20;
-          if (pt.x > w + 20) pt.x = -20;
-          if (pt.y < -20) pt.y = h + 20;
-          if (pt.y > h + 20) pt.y = -20;
+        if (elapsed < revealStartMs) {
+          setText(buildScramble(0));
+        } else {
+          const local = Math.min(revealSpanMs, Math.max(0, elapsed - revealStartMs));
+          const ratio = local / revealSpanMs;
+          // Use ceil so we reliably reach the final text *before* fade completes.
+          const locked = Math.min(
+            TARGET_TEXT.length,
+            Math.ceil(ratio * TARGET_TEXT.length)
+          );
+          setText(buildScramble(locked));
         }
-
-        draw();
       }
 
-      if (p >= 1) {
-        finish();
+      // Begin the fade near the end, but ensure the splash is fully gone by 5s.
+      if (!fadingRef.current && elapsed >= fadeStartMs) {
+        setFading(true);
+      }
+
+      // End exactly at DURATION_MS.
+      if (elapsed >= DURATION_MS) {
+        window.cancelAnimationFrame(rafRef.current);
+        setText(TARGET_TEXT);
+        setHidden(true);
         return;
       }
 
       rafRef.current = window.requestAnimationFrame(step);
     };
 
-    resize();
-    window.addEventListener("resize", resize);
     rafRef.current = window.requestAnimationFrame(step);
 
     return () => {
       finishRef.current = null;
       window.cancelAnimationFrame(rafRef.current);
-      window.clearInterval(scrambleRef.current);
-      window.removeEventListener("resize", resize);
     };
-  }, [hidden, reduced]);
+  }, [hidden]);
 
   if (hidden) return null;
 
@@ -291,28 +168,34 @@ export function IntroSplash() {
     <div
       onPointerDown={() => finishRef.current?.()}
       className={
-        "fixed inset-0 z-[999] grid place-items-center bg-bg transition-opacity duration-[600ms] " +
+        "fixed inset-0 z-[999] grid place-items-center bg-bg transition-opacity duration-[250ms] " +
         (fading ? "opacity-0 pointer-events-none" : "opacity-100")
       }
       aria-label="Loading"
     >
-      <canvas
-        ref={canvasRef}
-        className="pointer-events-none absolute inset-0 h-full w-full"
-      />
-
-      {/* Extra golden light layer */}
-      <div
-        className="pointer-events-none absolute inset-0 opacity-80"
-        style={{
-          backgroundImage:
-            "radial-gradient(900px circle at 50% 30%, rgba(212,175,55,0.18), transparent 60%), radial-gradient(700px circle at 70% 65%, rgba(255,214,102,0.12), transparent 58%)",
-        }}
-        aria-hidden="true"
+      {/* Reusable particle network background (gold theme) */}
+      <ParticleBackground
+        particleColor="#D4AF37"
+        lineColor="#D4AF37"
+        backgroundInner="#0b0b0b"
+        backgroundOuter="#000000"
+        // More prominent + ethereal (denser network, brighter glow)
+        minParticles={65}
+        maxParticles={125}
+        densityDivisor={11000}
+        maxDistance={220}
+        speed={0.32}
+        lineOpacity={0.55}
+        lineWidth={1.1}
+        particleOpacity={0.95}
+        particleRadiusMin={1.2}
+        particleRadiusMax={3.0}
+        glow
+        glowBlur={22}
       />
 
       <div className="relative px-6 text-center">
-        <div className="font-display text-3xl tracking-[0.18em] text-gold2 drop-shadow-[0_0_18px_rgba(212,175,55,0.30)] sm:text-5xl">
+        <div className="font-display text-3xl tracking-[0.18em] text-gold2 drop-shadow-[0_0_18px_rgba(255,215,0,0.32)] sm:text-5xl">
           {text}
         </div>
 
