@@ -98,6 +98,14 @@ a {
   border: 2px solid rgb(var(--panel) / 0.85);
 }
 
+/* Utility: hide scrollbars for small horizontal scrollers (e.g., mobile nav actions) */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 
 /* Smooth anchor scrolling (disable if user prefers reduced motion) */
 html {
@@ -131,5 +139,22 @@ html {
   }
   .sheen::after {
     transition: none;
+  }
+}
+
+/* Mobile polish: reduce expensive glows/shadows slightly to avoid scroll jank on low-end GPUs */
+@media (max-width: 640px) {
+  .shadow-gold {
+    --tw-shadow: 0 0 0 1px rgb(var(--gold) / 0.28), 0 6px 18px rgb(var(--gold) / 0.10);
+  }
+}
+
+/* Splash loader progress bar (GPU-friendly transform animation) */
+@keyframes splash-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
   }
 }

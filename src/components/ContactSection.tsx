@@ -8,7 +8,7 @@ export function ContactSection() {
       <div className="grid gap-8 md:grid-cols-2 md:items-center">
         <div>
           <p className="text-xs uppercase tracking-[0.30em] text-gold2/80">Contact</p>
-          <h2 className="mt-3 font-display text-2xl md:text-3xl">To buy something premuim</h2>
+          <h2 className="mt-3 font-display text-2xl md:text-3xl">To buy something premium</h2>
           <p className="mt-3 max-w-xl text-sm text-muted">
             Contact on WhatsApp or call for details.
           </p>
@@ -60,7 +60,7 @@ export function ContactSection() {
 
           {/* WhatsApp group */}
           <div className="rounded-2xl border border-fg/10 bg-bg/25 p-5">
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="text-xs uppercase tracking-widest text-muted">WhatsApp group</div>
                 <p className="mt-2 max-w-xs text-sm text-fg/90">
@@ -81,7 +81,7 @@ export function ContactSection() {
                 href={WHATSAPP_GROUP_LINK}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0"
+                className="shrink-0 self-start sm:self-auto"
                 aria-label="Open WhatsApp group"
               >
                 <Image

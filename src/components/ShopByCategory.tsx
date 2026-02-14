@@ -121,11 +121,11 @@ export function ShopByCategory() {
           <button
             type="button"
             onClick={() => setOpenCategory(null)}
-            className="absolute inset-0 bg-bg/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-bg/70 sm:backdrop-blur-sm"
             aria-label="Close category popup"
           />
 
-          <div className="relative mx-auto mt-16 w-[min(1100px,92vw)] overflow-hidden rounded-3xl border border-fg/10 bg-panel/70 shadow-2xl">
+          <div className="relative mx-auto mt-10 w-[min(1100px,92vw)] overflow-hidden rounded-3xl border border-fg/10 bg-panel/70 shadow-2xl sm:mt-16">
             <div
               className="pointer-events-none absolute inset-0 opacity-70"
               style={{
@@ -135,7 +135,7 @@ export function ShopByCategory() {
               aria-hidden="true"
             />
 
-            <header className="relative flex items-center justify-between gap-3 border-b border-fg/10 bg-bg/35 px-5 py-4 backdrop-blur">
+            <header className="relative flex items-center justify-between gap-3 border-b border-fg/10 bg-bg/35 px-5 py-4 sm:backdrop-blur">
               <div className="min-w-0">
                 <div className="text-xs uppercase tracking-[0.30em] text-muted">
                   Category
@@ -156,7 +156,7 @@ export function ShopByCategory() {
               </button>
             </header>
 
-            <div className="relative max-h-[75vh] overflow-auto p-5 md:p-6">
+            <div className="relative max-h-[78svh] overflow-auto overscroll-contain p-5 [-webkit-overflow-scrolling:touch] md:p-6">
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {items.map((p) => (
                   <article
