@@ -18,6 +18,11 @@ export const site = {
   name: "TechShop Pro",
   description:
     "A one‑page, mobile‑first TechShop Pro demo with category popups, branded product cards, and smooth performance — deployable on Vercel free tier.",
-  // Replace after deploy (used for metadata + sitemap). Keep without trailing slash.
-  url: "https://example.com",
+  // Used for metadata + sitemap.
+  // ✅ Easiest option: set NEXT_PUBLIC_SITE_URL in Vercel Environment Variables.
+  // ✅ If you don't set it, Vercel builds usually provide VERCEL_URL automatically.
+  // Keep without trailing slash.
+  url:
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://example.com"),
 };

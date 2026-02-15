@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 
 /**
  * ParticleBackground
@@ -17,6 +17,12 @@ type RGB = { r: number; g: number; b: number };
 export type ParticleBackgroundProps = {
   className?: string;
   style?: React.CSSProperties;
+
+  /**
+   * Called once after the first frame is drawn.
+   * Useful for hiding CSS fallbacks (so the animation appears "instant" on first visit).
+   */
+  onReady?: () => void;
 
   // Theme
   particleColor?: string; // hex like #D4AF37
@@ -122,6 +128,7 @@ function getPerfHints(nextWidth: number): PerfHints {
 export default function ParticleBackground({
   className = "",
   style,
+  onReady,
 
   particleColor = "#D4AF37",
   lineColor = "#D4AF37",
@@ -150,10 +157,15 @@ export default function ParticleBackground({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number>(0);
 
+  // Start drawing as early as possible on the client (before the first paint after hydration).
+  // On the server this falls back to useEffect to avoid React warnings.
+  const useIsoLayoutEffect =
+    typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
   const particleRGB = useMemo(() => hexToRgb(particleColor), [particleColor]);
   const lineRGB = useMemo(() => hexToRgb(lineColor), [lineColor]);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -230,10 +242,10 @@ export default function ParticleBackground({
       const radius = sizeCss / 2;
 
       const g = cctx.createRadialGradient(center, center, 0, center, center, radius);
-      g.addColorStop(0, `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 1)`);
-      g.addColorStop(0.18, `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 0.92)`);
-      g.addColorStop(0.45, `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 0.40)`);
-      g.addColorStop(0.75, `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 0.12)`);
+      g.addColorStop(0, `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 0.82)`);
+      g.addColorStop(0.18, `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 0.66)`);
+      g.addColorStop(0.45, `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 0.24)`);
+      g.addColorStop(0.75, `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 0.07)`);
       g.addColorStop(1, `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 0)`);
 
       cctx.fillStyle = g;
@@ -242,7 +254,7 @@ export default function ParticleBackground({
       cctx.fill();
 
       // Bright core (helps the "golden dot" read clearly even when glow is soft).
-      cctx.fillStyle = `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 0.95)`;
+      cctx.fillStyle = `rgba(${particleRGB.r}, ${particleRGB.g}, ${particleRGB.b}, 0.75)`;
       cctx.beginPath();
       cctx.arc(center, center, Math.max(1.4, radius * 0.085), 0, Math.PI * 2);
       cctx.fill();
@@ -328,6 +340,8 @@ export default function ParticleBackground({
       );
       fitParticleCount(target);
     }
+
+    let didSignalReady = false;
 
     function render(now: number) {
       // Background
@@ -455,7 +469,7 @@ export default function ParticleBackground({
 
       // Wider "glow" width driven by glowBlur, but clamped for perf.
       const glowWidth = glow
-        ? lineWidth + clamp(glowBlur * 0.12, 1.2, 3.2)
+        ? lineWidth + clamp(glowBlur * 0.075, 0.9, 2.6)
         : lineWidth;
 
       // Glow pass (wider + softer alpha)
@@ -466,7 +480,7 @@ export default function ParticleBackground({
           if (!segs.length) continue;
           const tRep = (bi + 0.5) / LINE_BUCKETS;
           const alpha = tRep * lineOpacity * breatheLines;
-          ctx.globalAlpha = alpha * 0.58;
+          ctx.globalAlpha = alpha * 0.38;
           ctx.beginPath();
           for (let s = 0; s < segs.length; s += 4) {
             ctx.moveTo(segs[s], segs[s + 1]);
@@ -483,7 +497,7 @@ export default function ParticleBackground({
         if (!segs.length) continue;
         const tRep = (bi + 0.5) / LINE_BUCKETS;
         const alpha = tRep * lineOpacity * breatheLines;
-        ctx.globalAlpha = alpha;
+        ctx.globalAlpha = alpha * 0.86;
         ctx.beginPath();
         for (let s = 0; s < segs.length; s += 4) {
           ctx.moveTo(segs[s], segs[s + 1]);
@@ -498,7 +512,7 @@ export default function ParticleBackground({
       ctx.save();
       ctx.shadowBlur = 0;
       ctx.globalCompositeOperation = "lighter";
-      ctx.globalAlpha = particleOpacity * breatheDots;
+      ctx.globalAlpha = particleOpacity * breatheDots * (glow ? 0.85 : 1);
 
       if (glow && dotSprite) {
         const maxR = Math.max(0.0001, particleRadiusMax);
@@ -519,6 +533,16 @@ export default function ParticleBackground({
       }
       ctx.restore();
 
+      // Let the parent know we have rendered at least one frame.
+      if (!didSignalReady) {
+        didSignalReady = true;
+        try {
+          onReady?.();
+        } catch {
+          // ignore
+        }
+      }
+
       rafRef.current = window.requestAnimationFrame(render);
     }
     // Init
@@ -534,7 +558,9 @@ export default function ParticleBackground({
       };
     }
 
-    rafRef.current = window.requestAnimationFrame(render);
+    // Draw the first frame immediately so the animation appears right away.
+    // (render() schedules the next rAF internally.)
+    render(performance.now());
 
     return () => {
       window.cancelAnimationFrame(rafRef.current);
@@ -559,6 +585,7 @@ export default function ParticleBackground({
     glow,
     glowBlur,
     respectReducedMotion,
+    onReady,
   ]);
 
   return (

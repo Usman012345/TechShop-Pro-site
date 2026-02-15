@@ -1,4 +1,5 @@
 import { site, whatsappLink } from "@/data/site";
+import Image from "next/image";
 
 export function Hero() {
   const waHref = whatsappLink("السلام عليكم");
@@ -28,12 +29,27 @@ export function Hero() {
           Built to wow customers • Black & Gold • Smooth on every device
         </p>
 
-        <h1 className="mt-4 font-display text-3xl leading-tight md:text-5xl">
-          {site.name}{" "}
-          <span className="bg-gradient-to-r from-gold2 to-gold bg-clip-text text-transparent">
-            premium storefront
-          </span>
-        </h1>
+        {/* Headline + Logo: logo fills the entire RIGHT side of the heading block */}
+        <div className="mt-4 flex items-center gap-4">
+          <h1 className="min-w-0 flex-1 font-display text-3xl leading-tight md:text-5xl">
+            {site.name}{" "}
+            <span className="bg-gradient-to-r from-gold2 to-gold bg-clip-text text-transparent">
+              premium storefront
+            </span>
+          </h1>
+
+          {/* Brand logo (RIGHT side, much larger, responsive) */}
+          <div className="relative aspect-square w-[50%] min-w-[120px] max-w-[420px] shrink-0 overflow-hidden rounded-3xl border border-gold/25 bg-bg/25 shadow-gold">
+            <Image
+              src="/techshoppro-logo.webp"
+              alt={`${site.name} logo`}
+              fill
+              priority
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 320px, 420px"
+              className="object-contain p-2"
+            />
+          </div>
+        </div>
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <a

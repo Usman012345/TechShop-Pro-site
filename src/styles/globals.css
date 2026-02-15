@@ -158,3 +158,41 @@ html {
     transform: scaleX(1);
   }
 }
+
+/*
+  Splash loader "instant motion" fallback
+  - Runs from static HTML/CSS (so users see movement immediately on first visit)
+  - Removed as soon as the canvas draws its first frame (see IntroSplash)
+  - Uses transform animation (GPU-friendly) instead of animating background-position
+*/
+@keyframes splash-fallback-pan {
+  from {
+    transform: translate3d(-4%, -6%, 0);
+  }
+  to {
+    transform: translate3d(4%, 6%, 0);
+  }
+}
+
+.splash-fallback-layer {
+  position: absolute;
+  inset: -30%;
+  /* Dots + subtle grid lines (light, luxury "gold network" vibe) */
+  background-image:
+    radial-gradient(circle, rgba(255, 215, 0, 0.18) 0 1px, transparent 2px),
+    radial-gradient(circle, rgba(255, 214, 102, 0.12) 0 1px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 215, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(255, 215, 0, 0.03) 1px, transparent 1px);
+  background-size: 120px 120px, 220px 220px, 280px 280px, 280px 280px;
+  background-position: 0 0, 40px 60px, 0 0, 0 0;
+  opacity: 0.55;
+  filter: blur(0.2px);
+  will-change: transform;
+  animation: splash-fallback-pan 2.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .splash-fallback-layer {
+    animation: none;
+  }
+}

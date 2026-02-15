@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ParticleBackground from "@/components/ParticleBackground";
 
 const TARGET_TEXT = "TechShop.Pro";
@@ -15,6 +15,16 @@ const REVEAL_MS = 1000;
 const FADE_MS = 250;
 
 export function IntroSplash() {
+  // CSS-only fallback should show immediately (even before JS is fully ready),
+  // then disappear as soon as the canvas draws its first frame.
+  const [bgReady, setBgReady] = useState(false);
+  const bgReadyOnceRef = useRef(false);
+  const handleBgReady = useCallback(() => {
+    if (bgReadyOnceRef.current) return;
+    bgReadyOnceRef.current = true;
+    setBgReady(true);
+  }, []);
+
   const [hidden, setHidden] = useState(false);
   const [fading, setFading] = useState(false);
   // Render characters as fixed-width cells so the scramble doesn't cause subtle
@@ -166,6 +176,16 @@ export function IntroSplash() {
       }
       aria-label="Loading"
     >
+      {/*
+        CSS-only animated fallback (renders immediately from static HTML/CSS).
+        Hidden as soon as the canvas renders its first frame.
+      */}
+      {!bgReady && (
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="splash-fallback-layer" />
+        </div>
+      )}
+
       {/* Reusable particle network background (gold theme) */}
       <ParticleBackground
         // Brighter gold for a more premium, luminous loading moment
@@ -180,16 +200,17 @@ export function IntroSplash() {
         maxDistance={175}
         // Slightly faster drift so dots feel more alive.
         speed={0.8}
-        lineOpacity={0.72}
-        lineWidth={1.15}
-        particleOpacity={0.98}
+        lineOpacity={0.52}
+        lineWidth={1}
+        particleOpacity={0.92}
         particleRadiusMin={1.2}
         particleRadiusMax={2.8}
         glow
         // Brighter glow (implemented efficiently via sprites + bucketed lines)
-        glowBlur={22}
+        glowBlur={18}
         // Ensure the canvas reliably stacks behind the text on all browsers.
         style={{ zIndex: 0 }}
+        onReady={handleBgReady}
         // Keep the loading moment animated even if the OS prefers reduced motion.
         // (You can switch this back to `true` if you want strict accessibility.)
         respectReducedMotion={false}
@@ -198,7 +219,7 @@ export function IntroSplash() {
       <div className="relative z-10 px-6 text-center">
         <div
           className="font-display text-3xl text-gold2 sm:text-5xl"
-          style={{ textShadow: "0 0 18px rgba(255,215,0,0.42)" }}
+          style={{ textShadow: "0 0 18px rgba(255,215,0,0.32)" }}
         >
           <span className="inline-flex items-center justify-center gap-[0.18em]">
             {Array.from({ length: TARGET_TEXT.length }).map((_, i) => (
