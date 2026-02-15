@@ -264,11 +264,16 @@ export default function ParticleBackground({
       dotSprite = c;
     }
 
-    function buildGradient() {
+    // Note: `canvas.getContext('2d')` can return `null`, and TypeScript can lose
+    // the non-null narrowing across closures depending on how the context is
+    // declared. Accepting a nullable context here keeps this function robust
+    // and fixes strict TS builds (e.g. Vercel).
+    function buildGradient(context: CanvasRenderingContext2D | null) {
+      if (!context) return;
       const cx = width * 0.35;
       const cy = height * 0.3;
       const r = Math.max(width, height);
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      const g = context.createRadialGradient(cx, cy, 0, cx, cy, r);
       g.addColorStop(0, backgroundInner);
       g.addColorStop(0.6, backgroundOuter);
       g.addColorStop(1, backgroundOuter);
@@ -324,7 +329,7 @@ export default function ParticleBackground({
       // Draw in CSS px
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      buildGradient();
+      buildGradient(ctx);
 
       buildDotSprite();
 
