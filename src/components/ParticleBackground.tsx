@@ -169,7 +169,12 @@ export default function ParticleBackground({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx0 = canvas.getContext("2d", { alpha: true });
+    // TS note: even after the null-guard above, TypeScript may still treat
+    // `canvas` as possibly null inside nested functions/closures.
+    // Re-bind it to a non-null variable so strict builds (e.g. Vercel) pass.
+    const canvasEl: HTMLCanvasElement = canvas;
+
+    const ctx0 = canvasEl.getContext("2d", { alpha: true });
     if (!ctx0) return;
 
     const ctx: CanvasRenderingContext2D = ctx0;
@@ -300,7 +305,7 @@ export default function ParticleBackground({
     }
 
     function resize() {
-      const rect = canvas.getBoundingClientRect();
+      const rect = canvasEl.getBoundingClientRect();
       const nextW = rect.width || window.innerWidth;
       const nextH = rect.height || window.innerHeight;
 
@@ -323,8 +328,8 @@ export default function ParticleBackground({
       grid = Array.from({ length: total }, () => []);
 
       dpr = Math.min(window.devicePixelRatio || 1, perf.dprCap);
-      canvas.width = Math.round(width * dpr);
-      canvas.height = Math.round(height * dpr);
+      canvasEl.width = Math.round(width * dpr);
+      canvasEl.height = Math.round(height * dpr);
 
       // Draw in CSS px
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
