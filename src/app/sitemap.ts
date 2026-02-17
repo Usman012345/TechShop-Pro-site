@@ -1,6 +1,10 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/data/site";
 
+// Required for `output: "export"` (static HTML export)
+// so this metadata route is treated as a build-time static asset.
+export const dynamic = "force-static";
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = site.url.replace(/\/$/, "");
   return [
