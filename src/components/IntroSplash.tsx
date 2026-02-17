@@ -216,12 +216,13 @@ export function IntroSplash() {
         respectReducedMotion={false}
       />
 
-      <div className="relative z-10 px-6 text-center">
+      <div className="relative z-10 w-full px-6 text-center">
         <div
-          className="font-display text-3xl text-gold2 sm:text-5xl"
+          // Use clamp + tighter cells on small screens so the title never drifts/overflows.
+          className="font-display text-[clamp(1.35rem,7vw,3rem)] leading-none text-gold2"
           style={{ textShadow: "0 0 18px rgba(255,215,0,0.32)" }}
         >
-          <span className="inline-flex items-center justify-center gap-[0.18em]">
+          <span className="inline-flex items-center justify-center gap-[0.12em] sm:gap-[0.18em]">
             {Array.from({ length: TARGET_TEXT.length }).map((_, i) => (
               <span
                 // eslint-disable-next-line react/no-array-index-key
@@ -229,7 +230,7 @@ export function IntroSplash() {
                 ref={(el) => {
                   charRefs.current[i] = el;
                 }}
-                className="inline-block w-[0.95em] text-center"
+                className="inline-block w-[0.85em] text-center sm:w-[0.95em]"
               >
                 .
               </span>

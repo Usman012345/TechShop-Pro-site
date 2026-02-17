@@ -7,7 +7,7 @@ export function Hero() {
   return (
     <section
       id="home"
-      className="relative scroll-mt-24 overflow-hidden rounded-3xl border border-fg/10 bg-panel/60 p-7 shadow-2xl md:p-10"
+      className="relative scroll-mt-24 overflow-hidden rounded-3xl border border-fg/10 bg-panel/60 p-6 shadow-2xl sm:p-7 md:p-10"
     >
       {/* Gold light fields (CSS only, GPU-friendly) */}
       <div
@@ -25,13 +25,13 @@ export function Hero() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-hero-sheen opacity-35 blur-2xl" />
 
       <div className="relative w-full">
-        <p className="max-w-2xl text-xs uppercase tracking-[0.30em] text-gold2/80">
+        <p className="max-w-2xl text-center text-xs uppercase tracking-[0.30em] text-gold2/80 sm:text-left">
           Built to wow customers • Black & Gold • Smooth on every device
         </p>
 
         {/* Headline + Logo: logo fills the entire RIGHT side of the heading block */}
-        <div className="mt-4 flex w-full items-center gap-4">
-          <h1 className="min-w-0 flex-1 max-w-2xl font-display text-3xl leading-tight md:text-5xl">
+        <div className="mt-5 flex w-full flex-col gap-6 sm:mt-4 sm:flex-row sm:items-center sm:gap-4">
+          <h1 className="min-w-0 flex-1 max-w-2xl text-center font-display text-3xl leading-tight sm:text-left md:text-5xl">
             {site.name}{" "}
             <span className="bg-gradient-to-r from-gold2 to-gold bg-clip-text text-transparent">
               premium storefront
@@ -39,13 +39,13 @@ export function Hero() {
           </h1>
 
           {/* Brand logo (RIGHT side, much larger, responsive) */}
-          <div className="relative ml-auto aspect-square w-[45%] min-w-[140px] max-w-[380px] shrink-0 overflow-hidden rounded-3xl border border-gold/25 bg-bg/25 shadow-gold">
+          <div className="relative mx-auto aspect-square w-[min(240px,70vw)] shrink-0 overflow-hidden rounded-3xl border border-gold/25 bg-bg/25 shadow-gold sm:mx-0 sm:ml-auto sm:w-[45%] sm:min-w-[160px] sm:max-w-[380px]">
             <Image
               src="/techshoppro-logo.webp"
               alt={`${site.name} logo`}
               fill
               priority
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 320px, 420px"
+              sizes="(max-width: 640px) 70vw, (max-width: 1024px) 320px, 420px"
               className="object-contain object-right p-2"
             />
           </div>
