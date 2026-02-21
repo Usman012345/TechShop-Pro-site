@@ -1,16 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   /**
-   * Static export configuration (Vercel / Cloudflare Pages / Netlify friendly)
+   * Vercel-friendly Next.js deployment.
    *
-   * NOTE: With `output: 'export'` you deploy the generated `/out` folder.
-   * This keeps the storefront static-host ready.
+   * This repo started as a static export, but the v2 demo adds:
+   * - Admin panel routes
+   * - API routes
+   *
+   * …which require a server runtime (still deploys on Vercel free tier).
    */
-  output: "export",
   trailingSlash: true,
   images: {
-    // next/image optimization isn't available in pure static export mode.
-    // This keeps <Image /> working by outputting standard <img> tags.
+    // Keep images unoptimized for simplicity and predictable builds.
     unoptimized: true,
   },
 };

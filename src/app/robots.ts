@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
 import { site } from "@/data/site";
 
-// Required for `output: "export"` (static HTML export)
-// so this metadata route is emitted as a build-time static asset.
+// Keep this metadata route static.
 export const dynamic = "force-static";
 
 export default function robots(): MetadataRoute.Robots {
@@ -12,6 +11,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
+      disallow: ["/admin", "/api/admin"],
     },
     sitemap: `${base}/sitemap.xml`,
   };

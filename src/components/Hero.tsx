@@ -78,6 +78,7 @@ export function Hero() {
 
         <div className="mt-6 flex max-w-2xl flex-wrap gap-2 text-xs text-muted">
           <span className="rounded-full border border-fg/10 bg-bg/35 px-3 py-1">Contact for prices</span>
+          <span className="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-gold2/80">Demo project • No checkout</span>
         </div>
       </div>
     </section>

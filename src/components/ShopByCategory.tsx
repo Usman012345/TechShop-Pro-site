@@ -2,33 +2,72 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X, ArrowRight } from "lucide-react";
-import { categories, type CategoryId, activeProductsByCategory } from "@/data/shop";
 import { whatsappLink } from "@/data/site";
 import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
+import type { Category, CategoryId, Product } from "@/types/catalog";
 
-function categoryCount(id: CategoryId) {
-  return activeProductsByCategory(id).length;
+function productMessage(p: Product) {
+  const plan = p.planLabel ? `\nPlan: ${p.planLabel}` : "";
+  const price = p.priceLabel ? `\nPrice: ${p.priceLabel}` : "";
+  return `السلام عليكم\n\nI'm interested in:\n${p.name}${plan}${price}\n\n(Demo inquiry)`;
 }
 
-function productMessage(productName: string) {
-  return `السلام عليكم
-${productName}`;
+function availabilityLabel(p: Product) {
+  switch (p.availability) {
+    case "sale":
+      return "On sale";
+    case "limited":
+      return "Limited";
+    case "contact":
+      return "Contact";
+    case "request":
+      return "On request";
+    case "unavailable":
+      return "Unavailable";
+    case "available":
+    default:
+      return "Available";
+  }
 }
 
-export function ShopByCategory() {
+function badgeText(p: Product) {
+  if (p.badge) return p.badge;
+  if (p.availability === "sale") return "Sale";
+  if (p.availability === "limited") return "Limited";
+  if (p.availability === "unavailable") return "Unavailable";
+  return undefined;
+}
+
+export type ShopByCategoryProps = {
+  categories: Category[];
+  products: Product[];
+};
+
+export function ShopByCategory({ categories, products }: ShopByCategoryProps) {
   const [openCategory, setOpenCategory] = useState<CategoryId | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const activeCategory = useMemo(
     () => categories.find((c) => c.id === openCategory) ?? null,
-    [openCategory]
+    [openCategory, categories]
   );
 
   const items = useMemo(() => {
     if (!openCategory) return [];
-    return activeProductsByCategory(openCategory);
-  }, [openCategory]);
+    return products
+      .filter((p) => p.isActive && p.categoryId === openCategory)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [openCategory, products]);
+
+  const countByCategory = useMemo(() => {
+    const m = new Map<CategoryId, number>();
+    for (const p of products) {
+      if (!p.isActive) continue;
+      m.set(p.categoryId, (m.get(p.categoryId) ?? 0) + 1);
+    }
+    return (id: CategoryId) => m.get(id) ?? 0;
+  }, [products]);
 
   // Close on ESC + lock scroll while modal is open.
   useEffect(() => {
@@ -64,22 +103,22 @@ export function ShopByCategory() {
         <div>
           <h2 className="font-display text-xl md:text-2xl">Shop by category</h2>
           <p className="mt-1 max-w-2xl text-sm text-muted">
-            Tap a category to open a clean popup with branded product cards — fast, responsive, and
-            built for a premium first impression.
+            Tap a category to open a clean popup with product cards — images, quick details, and a
+            contact CTA.
           </p>
         </div>
         <a
           href="#contact"
           className="inline-flex items-center gap-2 text-sm text-gold2/80 hover:text-gold2"
         >
-          Need something else? Contact <ArrowRight size={16} />
+          Want something else? Contact <ArrowRight size={16} />
         </a>
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {categories.map((c) => {
           const Icon = Icons[c.iconName];
-          const count = categoryCount(c.id);
+          const count = countByCategory(c.id);
           return (
             <button
               key={c.id}
@@ -137,9 +176,7 @@ export function ShopByCategory() {
 
             <header className="relative flex items-center justify-between gap-3 border-b border-fg/10 bg-bg/35 px-5 py-4 sm:backdrop-blur">
               <div className="min-w-0">
-                <div className="text-xs uppercase tracking-[0.30em] text-muted">
-                  Category
-                </div>
+                <div className="text-xs uppercase tracking-[0.30em] text-muted">Category</div>
                 <h3 className="mt-1 truncate font-display text-xl text-gold2">
                   {activeCategory.name}
                 </h3>
@@ -161,38 +198,75 @@ export function ShopByCategory() {
                 {items.map((p) => (
                   <article
                     key={p.id}
-                    className="group relative overflow-hidden rounded-2xl border border-fg/10 bg-bg/30 p-5 shadow-lg transition hover:border-gold/25"
+                    className="group relative overflow-hidden rounded-2xl border border-fg/10 bg-bg/30 shadow-lg transition hover:border-gold/25"
                   >
-                    {/* Brand logo watermark */}
-                    <div
-                      className="pointer-events-none absolute inset-0 opacity-25"
-                      aria-hidden="true"
-                    >
+                    {/* Image */}
+                    <div className="relative aspect-[16/10] overflow-hidden">
                       <img
-                        src={p.logo}
-                        alt=""
-                        className="absolute inset-0 h-full w-full object-contain p-8 opacity-90"
+                        src={p.image ?? "/products/placeholder.png"}
+                        alt={p.name}
+                        className="h-full w-full object-cover"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-bg/35 to-bg/80" />
+                      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-bg/15 to-bg/85" />
+
+                      {p.logo ? (
+                        <img
+                          src={p.logo}
+                          alt=""
+                          className="pointer-events-none absolute inset-0 h-full w-full object-contain p-10 opacity-15"
+                          aria-hidden="true"
+                          loading="lazy"
+                        />
+                      ) : null}
+
+                      {badgeText(p) ? (
+                        <div className="absolute left-3 top-3 rounded-full border border-gold/30 bg-bg/55 px-3 py-1 text-[11px] tracking-wide text-gold2 sm:backdrop-blur">
+                          {badgeText(p)}
+                        </div>
+                      ) : null}
                     </div>
 
-                    <div className="relative">
-                      <div className="font-display text-lg leading-snug">
-                        {p.name}
+                    <div className="relative p-5">
+                      <div className="font-display text-lg leading-snug">{p.name}</div>
+
+                      {p.planLabel || p.shortDescription ? (
+                        <div className="mt-1 text-xs text-muted">
+                          {p.planLabel ?? p.shortDescription}
+                        </div>
+                      ) : null}
+
+                      <div className="mt-3 flex items-center justify-between gap-3">
+                        <div className="text-sm text-gold2">{p.priceLabel ?? "Contact"}</div>
+                        <div className="text-xs text-muted">{availabilityLabel(p)}</div>
                       </div>
+
+                      {p.features?.length ? (
+                        <ul className="mt-3 space-y-1 text-xs text-muted">
+                          {p.features.slice(0, 3).map((f) => (
+                            <li key={f} className="flex gap-2">
+                              <span className="mt-[6px] h-1 w-1 shrink-0 rounded-full bg-gold/70" />
+                              <span>{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
 
                       <div className="mt-4">
                         <a
-                          href={whatsappLink(productMessage(p.name))}
+                          href={whatsappLink(productMessage(p))}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex w-full items-center justify-center rounded-full border border-gold/30 bg-gold/15 px-4 py-2 text-sm text-gold2 shadow-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
+                          className={cn(
+                            "inline-flex w-full items-center justify-center rounded-full border border-gold/30 bg-gold/15 px-4 py-2 text-sm text-gold2 shadow-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80",
+                            p.availability === "unavailable" && "pointer-events-none opacity-50"
+                          )}
+                          aria-disabled={p.availability === "unavailable"}
                         >
                           Contact
                         </a>
-                        <div className="mt-2 text-center text-xs text-muted">
-                          Multiple plans available
+                        <div className="mt-2 text-center text-[11px] text-muted">
+                          Opens WhatsApp (demo inquiry)
                         </div>
                       </div>
                     </div>
@@ -201,8 +275,8 @@ export function ShopByCategory() {
               </div>
 
               <div className="mt-6 rounded-2xl border border-fg/10 bg-bg/25 p-4 text-xs text-muted">
-                Tip: Click <span className="text-gold2">Contact</span> to open WhatsApp with a pre‑filled message.
-                You can also call from the contact section below.
+                This storefront is a <span className="text-gold2">demo project</span> (no checkout).
+                Tap <span className="text-gold2">Contact</span> to open WhatsApp for an inquiry.
               </div>
             </div>
           </div>

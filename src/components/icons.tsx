@@ -6,7 +6,9 @@ import {
   Wrench,
   PenTool,
   Film,
-  Sparkles
+  Sparkles,
+  Database,
+  Cpu
 } from "lucide-react";
 
 export const Icons = {
@@ -17,7 +19,9 @@ export const Icons = {
   Wrench,
   PenTool,
   Film,
-  Sparkles
+  Sparkles,
+  Database,
+  Cpu
 };
 
 export type IconName = keyof typeof Icons;
