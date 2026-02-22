@@ -6,6 +6,7 @@ import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { IntroSplash } from "@/components/IntroSplash";
+import { Analytics } from "@vercel/analytics/next";
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -64,6 +65,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           <Footer />
         </div>
+        <Analytics />
       </body>
     </html>
   );
