@@ -60,7 +60,7 @@ export function Footer() {
 
         <div className="mt-10 flex flex-col gap-3 border-t border-fg/10 pt-6 text-xs text-muted md:flex-row md:items-center md:justify-between">
           <p>
-            © {new Date().getFullYear()} {site.name}. Personal portfolio demo.
+            © {new Date().getFullYear()} {site.name}. All rights reserved.
           </p>
           <p className="max-w-xl">
             Trademarks and brand names belong to their respective owners. Replace logo assets with

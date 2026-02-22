@@ -10,7 +10,7 @@ import type { Category, CategoryId, Product } from "@/types/catalog";
 function productMessage(p: Product) {
   const plan = p.planLabel ? `\nPlan: ${p.planLabel}` : "";
   const price = p.priceLabel ? `\nPrice: ${p.priceLabel}` : "";
-  return `السلام عليكم\n\nI'm interested in:\n${p.name}${plan}${price}\n\n(Demo inquiry)`;
+  return `السلام عليكم\n\nI'm interested in:\n${p.name}${plan}${price}\n\nSent from TechShop Pro website.`;
 }
 
 function availabilityLabel(p: Product) {
@@ -266,7 +266,7 @@ export function ShopByCategory({ categories, products }: ShopByCategoryProps) {
                           Contact
                         </a>
                         <div className="mt-2 text-center text-[11px] text-muted">
-                          Opens WhatsApp (demo inquiry)
+                          Opens WhatsApp
                         </div>
                       </div>
                     </div>
@@ -275,7 +275,7 @@ export function ShopByCategory({ categories, products }: ShopByCategoryProps) {
               </div>
 
               <div className="mt-6 rounded-2xl border border-fg/10 bg-bg/25 p-4 text-xs text-muted">
-                This storefront is a <span className="text-gold2">demo project</span> (no checkout).
+                No checkout on this site.
                 Tap <span className="text-gold2">Contact</span> to open WhatsApp for an inquiry.
               </div>
             </div>

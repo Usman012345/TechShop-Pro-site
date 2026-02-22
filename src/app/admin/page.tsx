@@ -1,10 +1,12 @@
 import { requireAdminOrRedirect } from "@/lib/adminAuth";
+import { isPersistentStorageEnabled } from "@/lib/catalogStore";
 import { AdminClient } from "@/app/admin/ui/AdminClient";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminPage() {
+export default async function AdminPage() {
   requireAdminOrRedirect();
+  const persistenceEnabled = await isPersistentStorageEnabled();
 
   return (
     <div className="space-y-6">
@@ -13,8 +15,8 @@ export default function AdminPage() {
           <div className="text-xs uppercase tracking-[0.30em] text-gold2/80">Admin Panel</div>
           <h1 className="mt-2 font-display text-2xl md:text-3xl">Catalog Manager</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted">
-            Manage categories and products for this demo storefront. Changes are stored in memory
-            (for a real deployment, connect a database).
+            Manage categories and products for your storefront. For persistence on Vercel, configure
+            Vercel KV (or Upstash Redis REST) environment variables.
           </p>
         </div>
 
@@ -28,7 +30,7 @@ export default function AdminPage() {
         </form>
       </div>
 
-      <AdminClient />
+      <AdminClient persistenceEnabled={persistenceEnabled} />
     </div>
   );
 }

@@ -14,7 +14,7 @@ export default function AdminLoginPage({
         <div className="text-xs uppercase tracking-[0.30em] text-gold2/80">Admin</div>
         <h1 className="mt-3 font-display text-2xl md:text-3xl">TechShop Pro Admin</h1>
         <p className="mt-2 text-sm text-muted">
-          Demo admin panel (password protected). This is a portfolio feature — no checkout logic.
+          Password-protected admin panel for managing categories and products (contact-only website).
         </p>
 
         {showError ? (
@@ -48,7 +48,7 @@ export default function AdminLoginPage({
           </button>
 
           <p className="mt-2 text-xs text-muted">
-            Tip (local demo): default password is <span className="text-gold2">techshoppro</span>.
+            Local dev tip: default password is <span className="text-gold2">techshoppro</span>.
             Change it by setting <span className="text-gold2">ADMIN_PASSWORD</span>.
           </p>
         </form>

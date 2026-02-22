@@ -6,8 +6,8 @@ import { getPublicCatalog } from "@/lib/catalogStore";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
-  const catalog = getPublicCatalog();
+export default async function HomePage() {
+  const catalog = await getPublicCatalog();
   return (
     <div className="space-y-12">
       <Hero />

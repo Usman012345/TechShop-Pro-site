@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Catalog, Category, CategoryId, Product, ProductAvailability } from "@/types/catalog";
+import type { IconName } from "@/components/icons";
+import { Icons } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 type ApiCatalogResponse = { ok: true; catalog: Catalog } | { ok: false; error: string };
@@ -23,6 +25,10 @@ const availabilityOptions: { value: ProductAvailability; label: string }[] = [
   { value: "request", label: "On request" },
   { value: "unavailable", label: "Unavailable" },
 ];
+
+const iconOptions: { value: IconName; label: string }[] = (Object.keys(Icons) as IconName[]).map(
+  (k) => ({ value: k, label: k })
+);
 
 function EmptyState({ title, text }: { title: string; text: string }) {
   return (
@@ -109,13 +115,22 @@ function Modal({
   );
 }
 
-export function AdminClient() {
+export function AdminClient({
+  persistenceEnabled,
+}: {
+  persistenceEnabled: boolean;
+}) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
 
   const [filterCategory, setFilterCategory] = useState<CategoryId | "all">("all");
   const [query, setQuery] = useState("");
+
+  // Category editor
+  const [catEditOpen, setCatEditOpen] = useState(false);
+  const [catEditing, setCatEditing] = useState<Category | null>(null);
+  const [catDraft, setCatDraft] = useState<Category | null>(null);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -161,6 +176,37 @@ export function AdminClient() {
 
   const categories = catalog?.categories ?? [];
 
+  const categoriesView = useMemo(() => {
+    return [...categories].sort((a, b) => {
+      const ao = typeof a.sortOrder === "number" ? a.sortOrder : 1e9;
+      const bo = typeof b.sortOrder === "number" ? b.sortOrder : 1e9;
+      if (ao !== bo) return ao - bo;
+      return a.name.localeCompare(b.name);
+    });
+  }, [categories]);
+
+  async function saveCategory(next: Category) {
+    const res = await fetch("/api/admin/categories", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ category: next }),
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(data?.error ?? "Save category failed");
+    }
+  }
+
+  async function removeCategory(id: string) {
+    const res = await fetch(`/api/admin/categories/${encodeURIComponent(id)}`,
+      { method: "DELETE" }
+    );
+    if (!res.ok) {
+      const data = (await res.json().catch(() => null)) as { error?: string } | null;
+      throw new Error(data?.error ?? "Delete category failed");
+    }
+  }
+
   async function saveProduct(next: Product) {
     // Upsert: POST /api/admin/products
     const res = await fetch("/api/admin/products", {
@@ -205,6 +251,59 @@ export function AdminClient() {
     await refresh();
   }
 
+  function openCategoryEdit(c: Category) {
+    setCatEditing(c);
+    setCatDraft(structuredClone(c));
+    setCatEditOpen(true);
+  }
+
+  function openCategoryCreate() {
+    const base: Category = {
+      id: "",
+      name: "",
+      description: "",
+      iconName: "Sparkles",
+      sortOrder: (categoriesView[categoriesView.length - 1]?.sortOrder ?? categoriesView.length) + 1,
+    };
+    setCatEditing(null);
+    setCatDraft(base);
+    setCatEditOpen(true);
+  }
+
+  async function handleCategorySave() {
+    if (!catDraft) return;
+    const id = catDraft.id.trim();
+    if (!id) {
+      alert("Category id is required");
+      return;
+    }
+    if (!catDraft.name.trim()) {
+      alert("Category name is required");
+      return;
+    }
+    try {
+      await saveCategory({ ...catDraft, id });
+      setCatEditOpen(false);
+      await refresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Save failed");
+    }
+  }
+
+  async function handleCategoryDelete(id: string) {
+    const ok = confirm(
+      "Delete this category? Products in this category will be kept but marked inactive (hidden on the website)."
+    );
+    if (!ok) return;
+    try {
+      await removeCategory(id);
+      if (filterCategory === id) setFilterCategory("all");
+      await refresh();
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Delete failed");
+    }
+  }
+
   function openEdit(p: Product) {
     setEditing(p);
     setDraft(structuredClone(p));
@@ -215,7 +314,7 @@ export function AdminClient() {
     const base: Product = {
       id: "",
       name: "",
-      categoryId: "security",
+      categoryId: categoriesView[0]?.id ?? "security",
       availability: "available",
       isActive: true,
       image: "/products/placeholder.png",
@@ -320,6 +419,26 @@ export function AdminClient() {
 
   return (
     <div className="grid gap-6">
+      {!persistenceEnabled ? (
+        <div className="rounded-3xl border border-gold/25 bg-gold/10 p-5 text-sm text-muted">
+          <div className="font-display text-base text-gold2">Persistence is OFF</div>
+          <p className="mt-1">
+            Your catalog is currently stored <span className="text-gold2">in memory</span>, so
+            changes may reset on redeploy/restart.
+          </p>
+          <p className="mt-2 text-xs">
+            To enable persistence on Vercel Free Tier, configure <span className="text-gold2">Vercel KV</span>
+            (KV_REST_API_URL / KV_REST_API_TOKEN) or <span className="text-gold2">Upstash Redis REST</span>
+            (UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN).
+          </p>
+        </div>
+      ) : (
+        <div className="rounded-3xl border border-fg/10 bg-panel/45 p-5 text-sm text-muted">
+          <div className="font-display text-base text-fg/95">Persistence is ON</div>
+          <p className="mt-1">Catalog changes will be saved in your KV storage.</p>
+        </div>
+      )}
+
       {/* Controls */}
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap items-center gap-2">
@@ -374,54 +493,106 @@ export function AdminClient() {
         </button>
       </div>
 
-      {/* Categories overview */}
+      {/* Categories */}
       <section className="rounded-3xl border border-fg/10 bg-panel/45 p-5 md:p-6">
-        <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="text-xs uppercase tracking-[0.30em] text-muted">Categories</div>
-            <div className="mt-2 font-display text-xl">Overview</div>
+            <div className="mt-2 font-display text-xl">Manage</div>
+            <p className="mt-2 max-w-2xl text-sm text-muted">
+              Add, edit, or remove categories. You can also set the sort order to control how they
+              appear on the home page.
+            </p>
           </div>
-          <div className="text-xs text-muted">Active products count</div>
-        </div>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {categories.map((c) => (
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              key={c.id}
               type="button"
-              onClick={() => setFilterCategory(c.id)}
-              className={cn(
-                "rounded-2xl border border-fg/10 bg-bg/25 p-4 text-left transition hover:border-gold/25",
-                filterCategory === c.id && "border-gold/35 bg-bg/30"
-              )}
+              onClick={openCategoryCreate}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-gold/30 bg-gold/15 px-5 text-sm text-gold2 shadow-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
             >
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm text-fg/95">{c.name}</div>
-                  <div className="mt-1 text-xs text-muted">{c.id}</div>
-                </div>
-                <div className="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-xs text-gold2">
-                  {counts.get(c.id) ?? 0}
-                </div>
-              </div>
+              + Add category
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setFilterCategory("all")}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-fg/10 bg-panel/45 px-5 text-sm text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
+            >
+              Show all products
+            </button>
+          </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => setFilterCategory("all")}
-            className={cn(
-              "text-xs text-gold2/80 hover:text-gold2",
-              filterCategory === "all" && "text-gold2"
-            )}
-          >
-            Show all products
-          </button>
-          <div className="text-xs text-muted">
-            Total products: <span className="text-gold2">{catalog.products.length}</span>
-          </div>
+        <div className="mt-4 overflow-auto rounded-2xl border border-fg/10">
+          <table className="min-w-[920px] w-full border-collapse text-sm">
+            <thead className="bg-bg/30">
+              <tr className="text-left text-xs text-muted">
+                <th className="p-3">Order</th>
+                <th className="p-3">Icon</th>
+                <th className="p-3">Name</th>
+                <th className="p-3">Id</th>
+                <th className="p-3">Description</th>
+                <th className="p-3">Active products</th>
+                <th className="p-3">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {categoriesView.map((c) => {
+                const Icon = Icons[c.iconName] ?? Icons.Sparkles;
+                return (
+                  <tr key={c.id} className="border-t border-fg/10">
+                    <td className="p-3 text-muted">{typeof c.sortOrder === "number" ? c.sortOrder : "—"}</td>
+                    <td className="p-3">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gold/25 bg-bg/35 text-gold2 shadow-gold">
+                        <Icon size={16} />
+                      </span>
+                    </td>
+                    <td className="p-3 text-fg/95">{c.name}</td>
+                    <td className="p-3 text-muted">{c.id}</td>
+                    <td className="p-3 text-muted">
+                      <span className="block max-w-[420px] truncate">{c.description}</span>
+                    </td>
+                    <td className="p-3">
+                      <span className="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-xs text-gold2">
+                        {counts.get(c.id) ?? 0}
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setFilterCategory(c.id)}
+                          className={cn(
+                            "rounded-full border border-fg/10 bg-panel/45 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55",
+                            filterCategory === c.id && "border-gold/30"
+                          )}
+                        >
+                          Filter
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => openCategoryEdit(c)}
+                          className="rounded-full border border-fg/10 bg-panel/45 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCategoryDelete(c.id)}
+                          className="rounded-full border border-fg/10 bg-bg/25 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-bg/30"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4 text-xs text-muted">
+          Total products: <span className="text-gold2">{catalog.products.length}</span>
         </div>
       </section>
 
@@ -524,6 +695,134 @@ export function AdminClient() {
         ) : null}
       </section>
 
+      {/* Category modal */}
+      <Modal
+        open={catEditOpen}
+        title={catEditing ? "Edit category" : "Add category"}
+        onClose={() => setCatEditOpen(false)}
+      >
+        {!catDraft ? null : (
+          <div className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Category name">
+                <TextInput
+                  value={catDraft.name}
+                  onChange={(e) =>
+                    setCatDraft((d) => (d ? { ...d, name: e.target.value } : d))
+                  }
+                  placeholder="e.g., VPN Services"
+                />
+              </Field>
+
+              <Field label="Category id (slug)">
+                <div className="flex gap-2">
+                  <TextInput
+                    value={catDraft.id}
+                    onChange={(e) =>
+                      setCatDraft((d) => (d ? { ...d, id: e.target.value } : d))
+                    }
+                    placeholder="e.g., vpn"
+                    disabled={Boolean(catEditing)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCatDraft((d) =>
+                        d
+                          ? {
+                              ...d,
+                              id: d.id || slugifyId(d.name || "category"),
+                            }
+                          : d
+                      )
+                    }
+                    disabled={Boolean(catEditing)}
+                    className={cn(
+                      "shrink-0 rounded-xl border border-fg/10 bg-bg/25 px-3 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-bg/30",
+                      catEditing && "opacity-40 pointer-events-none"
+                    )}
+                  >
+                    Auto
+                  </button>
+                </div>
+                {catEditing ? (
+                  <div className="text-[11px] text-muted">
+                    Id cannot be changed for existing categories.
+                  </div>
+                ) : null}
+              </Field>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <Field label="Icon">
+                <Select
+                  value={catDraft.iconName}
+                  onChange={(e) =>
+                    setCatDraft((d) =>
+                      d ? { ...d, iconName: e.target.value as IconName } : d
+                    )
+                  }
+                >
+                  {iconOptions.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+
+              <Field label="Sort order (optional)">
+                <TextInput
+                  type="number"
+                  value={
+                    typeof catDraft.sortOrder === "number" ? String(catDraft.sortOrder) : ""
+                  }
+                  onChange={(e) =>
+                    setCatDraft((d) =>
+                      d
+                        ? {
+                            ...d,
+                            sortOrder: e.target.value ? Number(e.target.value) : undefined,
+                          }
+                        : d
+                    )
+                  }
+                  placeholder="1"
+                />
+              </Field>
+              <div className="hidden md:block" />
+            </div>
+
+            <Field label="Description">
+              <TextArea
+                value={catDraft.description}
+                onChange={(e) =>
+                  setCatDraft((d) => (d ? { ...d, description: e.target.value } : d))
+                }
+                placeholder="Short description shown under the category title."
+              />
+            </Field>
+
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setCatEditOpen(false)}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-fg/10 bg-panel/45 px-5 text-sm text-fg/90 transition hover:border-fg/20 hover:bg-panel/55"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleCategorySave}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-gold/30 bg-gold/15 px-5 text-sm text-gold2 shadow-gold transition hover:border-gold/50 hover:bg-gold/20"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Edit / Create modal */}
       <Modal
         open={editOpen}
@@ -582,7 +881,7 @@ export function AdminClient() {
                     )
                   }
                 >
-                  {categories.map((c) => (
+                  {categoriesView.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>

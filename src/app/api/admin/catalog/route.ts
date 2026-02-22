@@ -18,10 +18,10 @@ function assertAdmin() {
   return null;
 }
 
-export function GET() {
+export async function GET() {
   const unauth = assertAdmin();
   if (unauth) return unauth;
-  return NextResponse.json({ ok: true, catalog: getCatalog() });
+  return NextResponse.json({ ok: true, catalog: await getCatalog() });
 }
 
 /**
@@ -37,7 +37,7 @@ export async function PUT(req: Request) {
     return NextResponse.json({ ok: false, error: "Missing catalog" }, { status: 400 });
   }
 
-  setCatalog(body.catalog);
+  await setCatalog(body.catalog);
   return NextResponse.json({ ok: true });
 }
 
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
   // If action=reset
   const url = new URL(req.url);
   if (url.searchParams.get("action") === "reset") {
-    resetCatalogToSeed();
+    await resetCatalogToSeed();
     return NextResponse.json({ ok: true });
   }
 

@@ -5,7 +5,7 @@ export const runtime = "nodejs";
 
 function getAdminPassword() {
   // Set ADMIN_PASSWORD in Vercel → Project → Settings → Environment Variables.
-  // A dev fallback is provided so the demo works locally out of the box.
+  // A local dev fallback is provided so the project runs out of the box.
   return process.env.ADMIN_PASSWORD ?? "techshoppro";
 }
 

@@ -4,27 +4,22 @@ import type { IconName } from "@/components/icons";
  * Catalog types for TechShop Pro.
  *
  * Notes:
- * - This project is a demo portfolio build.
  * - No checkout/order flow is implemented (contact-only).
  */
 
-export type CategoryId =
-  | "vpn"
-  | "security"
-  | "office"
-  | "creative"
-  | "utilities"
-  | "data"
-  | "writing"
-  | "media"
-  | "hardware"
-  | "specials";
+/**
+ * CategoryId is intentionally a string (not a fixed union) so the admin panel
+ * can create new categories without requiring a code change.
+ */
+export type CategoryId = string;
 
 export type Category = {
   id: CategoryId;
   name: string;
   description: string;
   iconName: IconName;
+  /** Lower comes first. Optional; if missing, UI falls back to array order. */
+  sortOrder?: number;
 };
 
 export type ProductAvailability =
@@ -49,7 +44,7 @@ export type Product = {
   /** Optional watermark logo (SVG usually) stored in /public/logos. */
   logo?: string;
 
-  /** Display values (no currency math; demo only). */
+  /** Display values (no currency math; display-only). */
   priceLabel?: string;
   planLabel?: string;
 

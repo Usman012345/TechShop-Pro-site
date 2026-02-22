@@ -1,6 +1,6 @@
-# TechShop Pro — Demo Software Tools Shop (Next.js + Tailwind)
+# TechShop Pro — Software Tools Shop (Next.js + Tailwind)
 
-Portfolio/demo storefront built with:
+Showcase storefront built with:
 
 - **Next.js (App Router) + TypeScript + Tailwind CSS**
 - **Luxury black + gold** UI
@@ -56,13 +56,31 @@ Environment variables (recommended on Vercel):
 - `ADMIN_PASSWORD` — admin login password
 - `ADMIN_SESSION_SECRET` — cookie signing secret
 
-Local demo defaults:
+Local dev defaults:
 
 - If `ADMIN_PASSWORD` is not set, it defaults to: `techshoppro`
 
-> Note: This demo stores catalog changes **in memory**. On serverless hosts, this means changes are
-> not guaranteed to persist long-term. To make it fully persistent, connect a database and swap the
-> store implementation.
+### Persistent catalog storage (recommended for Vercel)
+
+This project supports **persistent catalog storage** on serverless hosting via a connectionless REST
+KV store:
+
+**Option A — Vercel KV** (recommended if you want everything inside Vercel)
+
+- `KV_REST_API_URL`
+- `KV_REST_API_TOKEN`
+
+**Option B — Upstash Redis REST**
+
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
+
+Optional:
+
+- `TECHSHOP_CATALOG_KEY` (default: `techshoppro:catalog:v1`)
+
+If no KV environment variables are set, the catalog falls back to **in-memory** storage (useful for
+local development, but not persistent on Vercel).
 
 ---
 
@@ -72,7 +90,7 @@ Seed data lives in:
 
 - `src/data/catalogSeed.ts`
 
-Public storefront reads from an in-memory store seeded by that file:
+Public storefront reads from a server-side catalog store seeded by that file:
 
 - `src/lib/catalogStore.ts`
 
@@ -108,12 +126,12 @@ src/
     catalogSeed.ts           # seed catalog
   lib/
     adminAuth.ts             # cookie signing/verification
-    catalogStore.ts          # in-memory store
+    catalogStore.ts          # KV (persistent) + in-memory fallback
 ```
 
 ---
 
 ## Notes
 
-- This is a **demo** project. No order/checkout logic is included.
+- No order/checkout logic is included (contact-only).
 - Third‑party logos/images are used as demo assets. Replace them if you publish commercially.

@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from "@/lib/adminAuth";
-import { deleteProduct, patchProduct } from "@/lib/catalogStore";
-import type { Product } from "@/types/catalog";
+import { deleteCategory, patchCategory } from "@/lib/catalogStore";
+import type { Category } from "@/types/catalog";
 
 export const runtime = "nodejs";
 
@@ -21,15 +21,14 @@ export async function PATCH(
   const unauth = assertAdmin();
   if (unauth) return unauth;
 
-  const { id } = params;
-  const body = (await req.json().catch(() => null)) as { patch?: Partial<Product> } | null;
+  const body = (await req.json().catch(() => null)) as { patch?: Partial<Category> } | null;
   if (!body?.patch) {
     return NextResponse.json({ ok: false, error: "Missing patch" }, { status: 400 });
   }
 
   try {
-    const updated = await patchProduct(id, body.patch);
-    return NextResponse.json({ ok: true, product: updated });
+    const updated = await patchCategory(params.id, body.patch);
+    return NextResponse.json({ ok: true, category: updated });
   } catch (e) {
     return NextResponse.json(
       { ok: false, error: e instanceof Error ? e.message : "Update failed" },
@@ -44,7 +43,7 @@ export async function DELETE(
 ) {
   const unauth = assertAdmin();
   if (unauth) return unauth;
-  const { id } = params;
-  await deleteProduct(id);
+
+  await deleteCategory(params.id);
   return NextResponse.json({ ok: true });
 }

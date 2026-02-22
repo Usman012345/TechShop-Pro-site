@@ -7,8 +7,8 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 function getSecret() {
   // In production, set ADMIN_SESSION_SECRET.
-  // A default is provided for local demo only.
-  return process.env.ADMIN_SESSION_SECRET ?? "techshop-pro-demo-secret-change-me";
+  // A default is provided for local development only.
+  return process.env.ADMIN_SESSION_SECRET ?? "techshop-pro-local-secret-change-me";
 }
 
 function base64url(input: Buffer | string) {

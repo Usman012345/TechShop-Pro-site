@@ -17,7 +17,7 @@ export function whatsappLink(message: string) {
 export const site = {
   name: "TechShop Pro",
   description:
-    "A one‑page, mobile‑first TechShop Pro demo with category popups, branded product cards, and smooth performance — deployable on Vercel free tier.",
+    "A one‑page, mobile‑first TechShop Pro website with category popups, branded product cards, and smooth performance — deployable on Vercel free tier.",
   // Used for metadata + sitemap.
   // ✅ Easiest option: set NEXT_PUBLIC_SITE_URL in Vercel Environment Variables.
   // ✅ If you don't set it, Vercel builds usually provide VERCEL_URL automatically.

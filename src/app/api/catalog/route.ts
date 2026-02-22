@@ -3,7 +3,7 @@ import { getPublicCatalog } from "@/lib/catalogStore";
 
 export const runtime = "nodejs";
 
-export function GET() {
-  const catalog = getPublicCatalog();
+export async function GET() {
+  const catalog = await getPublicCatalog();
   return NextResponse.json(catalog);
 }

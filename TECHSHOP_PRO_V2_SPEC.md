@@ -285,24 +285,34 @@ For a portfolio demo, #1 is easiest and stable on Vercel.
 
 # Part 3 — Server-Side Logic Specification
 
+> **Implementation note (current repo):** The shipped Vercel-ready project uses a **connectionless
+> REST KV** for catalog persistence (works great on Vercel Free Tier):
+>
+> - **Vercel KV** (`KV_REST_API_URL`, `KV_REST_API_TOKEN`)
+> - **Upstash Redis REST** (`UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`)
+>
+> A relational DB (Prisma + Postgres) is still a valid upgrade path, but is not required for this
+> demo/contact-only storefront.
+
 ## 3.1 Required backend capabilities
 - Admin authentication (sessions)
-- Catalog persistence (DB)
+- Catalog persistence (KV or DB)
 - CRUD operations for categories/products
 - Public read APIs (or server-side DB reads) for rendering the catalog
 - Cache invalidation / revalidation when admin updates catalog
 
 ## 3.2 Tech stack recommendation (fits existing repo)
 - Keep: Next.js App Router + TypeScript + Tailwind
-- Add:
-  - Prisma ORM (`prisma`, `@prisma/client`)
-  - Zod for validation (`zod`)
-  - bcrypt for password hashing (`bcryptjs`)
-  - Optional: Auth.js / NextAuth (if you prefer a standard auth solution)
+- Add (recommended for Vercel Free Tier persistence):
+  - Vercel KV or Upstash Redis REST (store the full catalog JSON under a single key)
 
-### Database
-- Dev: SQLite
-- Prod (Vercel): Postgres (Neon/Supabase) because serverless filesystems are ephemeral.
+### Optional “full DB” upgrade path
+If you want a relational DB later:
+
+- Prisma ORM (`prisma`, `@prisma/client`)
+- Zod for validation (`zod`)
+- bcrypt for password hashing (`bcryptjs`)
+- Postgres provider (Neon/Supabase)
 
 ## 3.3 Data model (Prisma schema)
 Example (agent can implement exactly):

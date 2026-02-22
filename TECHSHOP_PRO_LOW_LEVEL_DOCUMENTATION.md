@@ -1,6 +1,6 @@
 # TechShop Pro — Low‑Level Developer Documentation (v2)
 
-This document explains **exactly where and how to edit** the TechShop Pro demo storefront.
+This document explains **exactly where and how to edit** the TechShop Pro storefront.
 
 It is written to help **a developer or an AI coding agent** quickly understand the codebase.
 
@@ -8,7 +8,7 @@ It is written to help **a developer or an AI coding agent** quickly understand t
 
 ## 0) What this project is (and is not)
 
-**TechShop Pro** is a **portfolio/demo storefront** built with:
+**TechShop Pro** is a **showcase storefront** built with:
 
 - Next.js (App Router)
 - React + TypeScript
@@ -19,7 +19,7 @@ Key product goals:
 - Keep the **black & gold** look
 - Keep the **4‑second IntroSplash loader**
 - Show products as **cards with images + details + contact CTA**
-- No checkout/cart/payments (demo only)
+- No checkout/cart/payments (contact-only)
 
 Deployment goal:
 
@@ -43,7 +43,7 @@ Edit:
 
 - `src/data/catalogSeed.ts`
 
-This is the initial catalog used to seed the in-memory store.
+This is the initial catalog used to seed the server-side catalog store.
 
 ### Product images
 
@@ -122,12 +122,20 @@ Instead:
 
 1. Seed catalog:
    - `src/data/catalogSeed.ts`
-2. In-memory store:
+2. Server-side catalog store:
    - `src/lib/catalogStore.ts`
 3. Home page loads it server-side and passes to UI:
    - `src/app/page.tsx`
 
-If you want “real” persistence, replace `catalogStore.ts` with a DB implementation.
+### Persistence on Vercel
+
+`catalogStore.ts` supports **persistent storage** via a connectionless REST KV service:
+
+- **Vercel KV**: `KV_REST_API_URL`, `KV_REST_API_TOKEN`
+- **Upstash Redis REST**: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+
+If none of these environment variables are set, the catalog falls back to **in-memory** storage
+(fine for local dev, not persistent across serverless restarts).
 
 ---
 
@@ -140,7 +148,7 @@ If you want “real” persistence, replace `catalogStore.ts` with a DB implemen
 
 ### Authentication
 
-Admin auth is demo-simple:
+Admin auth is intentionally minimal:
 
 - Password compare against env var `ADMIN_PASSWORD`
 - Signed cookie session using `ADMIN_SESSION_SECRET`
@@ -154,6 +162,9 @@ Code:
 - `GET /api/admin/catalog` — returns full catalog
 - `PUT /api/admin/catalog` — replace catalog (import)
 - `POST /api/admin/catalog?action=reset` — reset to seed
+- `POST /api/admin/categories` — upsert category
+- `PATCH /api/admin/categories/:id` — patch category
+- `DELETE /api/admin/categories/:id` — delete category (products are kept but marked inactive)
 - `POST /api/admin/products` — upsert product
 - `PATCH /api/admin/products/:id` — patch fields
 - `DELETE /api/admin/products/:id` — remove product
@@ -198,6 +209,16 @@ Nothing special is required — deploy as a normal Next.js app.
 - `ADMIN_PASSWORD` — admin login password
 - `ADMIN_SESSION_SECRET` — long random string
 
+For persistence (recommended):
+
+- `KV_REST_API_URL`, `KV_REST_API_TOKEN` (Vercel KV)
+  - OR
+- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (Upstash)
+
+Optional:
+
+- `TECHSHOP_CATALOG_KEY` — custom KV key name
+
 ---
 
 ## 7) Common edits checklist
@@ -219,9 +240,9 @@ Option B (admin): go to `/admin` → “Add product”.
 
 ---
 
-## 8) Safety / demo note
+## 8) Safety note
 
-This project is presented as a **portfolio demo**.
+This project is built as a **contact-only showcase**.
 
 - No license circumvention features.
 - Avoid presenting it as an official reseller storefront.
