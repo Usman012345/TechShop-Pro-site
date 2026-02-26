@@ -33,7 +33,9 @@ export async function POST(req: Request) {
       const url = new URL("/admin/login", req.url);
       url.searchParams.set("error", "1");
       url.searchParams.set("next", next);
-      return NextResponse.redirect(url);
+      // IMPORTANT: use 303 so the browser follows up with a GET request.
+      // A 307/308 would re-POST to the login page and break the UX.
+      return NextResponse.redirect(url, 303);
     }
 
     return NextResponse.json({ ok: false, error: "Invalid password" }, { status: 401 });
@@ -44,7 +46,8 @@ export async function POST(req: Request) {
 
   // If this was a traditional form POST, redirect.
   if (!contentType.includes("application/json")) {
-    const res = NextResponse.redirect(new URL(next, req.url));
+    // IMPORTANT: use 303 so the browser follows up with a GET request.
+    const res = NextResponse.redirect(new URL(next, req.url), 303);
     res.cookies.set(cookie.name, cookie.value, cookie.options);
     return res;
   }

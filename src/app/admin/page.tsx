@@ -3,9 +3,10 @@ import { isPersistentStorageEnabled } from "@/lib/catalogStore";
 import { AdminClient } from "@/app/admin/ui/AdminClient";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export default async function AdminPage() {
-  requireAdminOrRedirect();
+  await requireAdminOrRedirect();
   const persistenceEnabled = await isPersistentStorageEnabled();
 
   return (

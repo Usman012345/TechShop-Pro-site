@@ -6,8 +6,9 @@ import type { Category } from "@/types/catalog";
 
 export const runtime = "nodejs";
 
-function assertAdmin() {
-  const token = cookies().get(ADMIN_COOKIE_NAME)?.value;
+async function assertAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
   if (!verifyAdminSessionToken(token)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
@@ -19,7 +20,7 @@ function assertAdmin() {
  * Body: { category: Category }
  */
 export async function POST(req: Request) {
-  const unauth = assertAdmin();
+  const unauth = await assertAdmin();
   if (unauth) return unauth;
 
   const body = (await req.json().catch(() => null)) as { category?: Category } | null;

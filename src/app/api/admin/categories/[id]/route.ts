@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from "@/lib/adminAuth";
 import { deleteCategory, patchCategory } from "@/lib/catalogStore";
@@ -6,8 +6,9 @@ import type { Category } from "@/types/catalog";
 
 export const runtime = "nodejs";
 
-function assertAdmin() {
-  const token = cookies().get(ADMIN_COOKIE_NAME)?.value;
+async function assertAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
   if (!verifyAdminSessionToken(token)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
@@ -15,11 +16,13 @@ function assertAdmin() {
 }
 
 export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const unauth = assertAdmin();
+  const unauth = await assertAdmin();
   if (unauth) return unauth;
+
+  const { id } = await params;
 
   const body = (await req.json().catch(() => null)) as { patch?: Partial<Category> } | null;
   if (!body?.patch) {
@@ -27,7 +30,7 @@ export async function PATCH(
   }
 
   try {
-    const updated = await patchCategory(params.id, body.patch);
+    const updated = await patchCategory(id, body.patch);
     return NextResponse.json({ ok: true, category: updated });
   } catch (e) {
     return NextResponse.json(
@@ -38,12 +41,13 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const unauth = assertAdmin();
+  const unauth = await assertAdmin();
   if (unauth) return unauth;
 
-  await deleteCategory(params.id);
+  const { id } = await params;
+  await deleteCategory(id);
   return NextResponse.json({ ok: true });
 }

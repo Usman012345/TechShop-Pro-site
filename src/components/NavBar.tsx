@@ -6,24 +6,35 @@ export function NavBar() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-fg/10 bg-bg/90 sm:bg-bg/75 sm:backdrop-blur sm:supports-[backdrop-filter]:bg-bg/45">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <a href="#home" className="inline-flex items-center gap-3">
-          <LogoMark />
-          <div className="font-display text-[11px] tracking-[0.22em] text-gold2/90 sm:text-sm">
-            {site.name}
-          </div>
-        </a>
+      <div className="mx-auto max-w-6xl px-4 py-3">
+        <div className="flex items-center justify-between">
+          <a href="/#home" className="inline-flex items-center gap-3">
+            <LogoMark />
+            <div className="font-display text-[11px] tracking-[0.22em] text-gold2/90 sm:text-sm">
+              {site.name}
+            </div>
+          </a>
 
-        <div className="no-scrollbar flex w-full items-center gap-2 overflow-x-auto whitespace-nowrap py-1 [-webkit-overflow-scrolling:touch] sm:w-auto sm:flex-wrap sm:justify-end sm:overflow-visible">
+          {/* Mobile: keep Login on the top-right */}
           <a
-            href="#categories"
+            href="/admin/"
+            className="inline-flex h-9 items-center justify-center rounded-full border border-fg/10 bg-panel/40 px-4 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:hidden"
+            aria-label="Open admin login"
+          >
+            Login
+          </a>
+        </div>
+
+        <div className="no-scrollbar mt-3 flex w-full items-center gap-2 overflow-x-auto whitespace-nowrap py-1 [-webkit-overflow-scrolling:touch] sm:mt-0 sm:w-auto sm:flex-wrap sm:justify-end sm:overflow-visible">
+          <a
+            href="/#categories"
             className="shrink-0 rounded-full border border-fg/10 bg-panel/40 px-3 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:px-4 sm:text-sm"
           >
             Browse
           </a>
 
           <a
-            href="#contact"
+            href="/#contact"
             className="shrink-0 rounded-full border border-fg/10 bg-panel/40 px-3 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:px-4 sm:text-sm"
           >
             Contact
@@ -47,6 +58,14 @@ export function NavBar() {
             aria-label="Open WhatsApp group"
           >
             WhatsApp Group
+          </a>
+
+          <a
+            href="/admin/"
+            className="hidden shrink-0 rounded-full border border-fg/10 bg-panel/40 px-3 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:inline-flex sm:px-4 sm:text-sm"
+            aria-label="Open admin login"
+          >
+            Login
           </a>
         </div>
       </div>

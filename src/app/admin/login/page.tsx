@@ -1,12 +1,15 @@
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
-export default function AdminLoginPage({
+export default async function AdminLoginPage({
   searchParams,
 }: {
-  searchParams?: { next?: string; error?: string };
+  // Next.js 15+ makes searchParams async.
+  searchParams?: Promise<{ next?: string; error?: string }>;
 }) {
-  const next = searchParams?.next ?? "/admin";
-  const showError = searchParams?.error === "1";
+  const sp = searchParams ? await searchParams : undefined;
+  const next = sp?.next ?? "/admin";
+  const showError = sp?.error === "1";
 
   return (
     <div className="mx-auto w-full max-w-lg">

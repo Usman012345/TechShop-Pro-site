@@ -10,8 +10,9 @@ import type { Catalog } from "@/types/catalog";
 
 export const runtime = "nodejs";
 
-function assertAdmin() {
-  const token = cookies().get(ADMIN_COOKIE_NAME)?.value;
+async function assertAdmin() {
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
   if (!verifyAdminSessionToken(token)) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
@@ -19,7 +20,7 @@ function assertAdmin() {
 }
 
 export async function GET() {
-  const unauth = assertAdmin();
+  const unauth = await assertAdmin();
   if (unauth) return unauth;
   return NextResponse.json({ ok: true, catalog: await getCatalog() });
 }
@@ -29,7 +30,7 @@ export async function GET() {
  * Body: { catalog: Catalog }
  */
 export async function PUT(req: Request) {
-  const unauth = assertAdmin();
+  const unauth = await assertAdmin();
   if (unauth) return unauth;
 
   const body = (await req.json().catch(() => null)) as { catalog?: Catalog } | null;
@@ -45,7 +46,7 @@ export async function PUT(req: Request) {
  * Reset catalog to seed.
  */
 export async function POST(req: Request) {
-  const unauth = assertAdmin();
+  const unauth = await assertAdmin();
   if (unauth) return unauth;
 
   // If action=reset

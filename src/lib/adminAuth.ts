@@ -46,8 +46,11 @@ export function verifyAdminSessionToken(token: string | undefined | null) {
   }
 }
 
-export function requireAdminOrRedirect() {
-  const token = cookies().get(ADMIN_COOKIE_NAME)?.value;
+export async function requireAdminOrRedirect() {
+  // Next.js 15+ makes cookies() async.
+  // https://nextjs.org/docs/app/api-reference/functions/cookies
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
   if (!verifyAdminSessionToken(token)) {
     redirect("/admin/login");
   }
