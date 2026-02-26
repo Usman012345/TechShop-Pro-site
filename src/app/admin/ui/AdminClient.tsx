@@ -757,17 +757,31 @@ export function AdminClient({
                 id={`cat-products-${c.id}`}
                 className="rounded-2xl border border-fg/10 bg-bg/20"
               >
-                <button
-                  type="button"
+                {/*
+                  NOTE: This header used to be a <button> containing another <button> ("+ Add"),
+                  which is invalid HTML and causes hydration errors in React/Next.
+                  We render an accessible div-button instead.
+                */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={open}
+                  aria-controls={`cat-products-panel-${c.id}`}
                   onClick={() => toggleCategoryOpen(c.id)}
-                  className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition hover:bg-bg/25"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      toggleCategoryOpen(c.id);
+                    }
+                  }}
+                  className="flex w-full cursor-pointer select-none items-center justify-between gap-4 px-4 py-4 text-left transition hover:bg-bg/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gold/25 bg-bg/35 text-gold2 shadow-gold">
                       <Icon size={18} />
                     </span>
-                    <div>
-                      <div className="font-display text-base text-fg/95">{c.name}</div>
+                    <div className="min-w-0">
+                      <div className="truncate font-display text-base text-fg/95">{c.name}</div>
                       <div className="mt-1 text-xs text-muted">
                         {c.id} • {list.length} total • {activeCount} active
                       </div>
@@ -791,10 +805,13 @@ export function AdminClient({
                       aria-hidden="true"
                     />
                   </div>
-                </button>
+                </div>
 
                 {open ? (
-                  <div className="border-t border-fg/10 p-4">
+                  <div
+                    id={`cat-products-panel-${c.id}`}
+                    className="border-t border-fg/10 p-4"
+                  >
                     {list.length === 0 ? (
                       <p className="text-sm text-muted">No products in this category yet.</p>
                     ) : (

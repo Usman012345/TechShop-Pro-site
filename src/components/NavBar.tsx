@@ -1,5 +1,6 @@
 import { site, WHATSAPP_GROUP_LINK, whatsappLink } from "@/data/site";
 import { LogoMark } from "@/components/LogoMark";
+import Link from "next/link";
 
 export function NavBar() {
   const waHref = whatsappLink("السلام عليكم");
@@ -8,37 +9,37 @@ export function NavBar() {
     <header className="sticky top-0 z-50 border-b border-fg/10 bg-bg/90 sm:bg-bg/75 sm:backdrop-blur sm:supports-[backdrop-filter]:bg-bg/45">
       <div className="mx-auto max-w-6xl px-4 py-3">
         <div className="flex items-center justify-between">
-          <a href="/#home" className="inline-flex items-center gap-3">
+          <Link href="/#home" className="inline-flex items-center gap-3">
             <LogoMark />
             <div className="font-display text-[11px] tracking-[0.22em] text-gold2/90 sm:text-sm">
               {site.name}
             </div>
-          </a>
+          </Link>
 
           {/* Mobile: keep Login on the top-right */}
-          <a
+          <Link
             href="/admin/"
             className="inline-flex h-9 items-center justify-center rounded-full border border-fg/10 bg-panel/40 px-4 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:hidden"
             aria-label="Open admin login"
           >
             Login
-          </a>
+          </Link>
         </div>
 
         <div className="no-scrollbar mt-3 flex w-full items-center gap-2 overflow-x-auto whitespace-nowrap py-1 [-webkit-overflow-scrolling:touch] sm:mt-0 sm:w-auto sm:flex-wrap sm:justify-end sm:overflow-visible">
-          <a
+          <Link
             href="/#categories"
             className="shrink-0 rounded-full border border-fg/10 bg-panel/40 px-3 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:px-4 sm:text-sm"
           >
             Browse
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/#contact"
             className="shrink-0 rounded-full border border-fg/10 bg-panel/40 px-3 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:px-4 sm:text-sm"
           >
             Contact
-          </a>
+          </Link>
 
           <a
             href={waHref}
@@ -60,13 +61,13 @@ export function NavBar() {
             WhatsApp Group
           </a>
 
-          <a
+          <Link
             href="/admin/"
             className="hidden shrink-0 rounded-full border border-fg/10 bg-panel/40 px-3 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:inline-flex sm:px-4 sm:text-sm"
             aria-label="Open admin login"
           >
             Login
-          </a>
+          </Link>
         </div>
       </div>
     </header>

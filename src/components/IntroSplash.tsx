@@ -49,6 +49,10 @@ export function IntroSplash() {
     // explicitly unlock when `hidden` flips to `true`.
     if (typeof document === "undefined") return;
 
+    // Mobile UX: allow native pull-to-refresh (Chrome/Android, Safari/iOS).
+    // Locking body scroll can prevent the gesture from working.
+    if (window.matchMedia("(max-width: 640px)").matches) return;
+
     if (!bodyPrevRef.current) {
       bodyPrevRef.current = {
         overflow: document.body.style.overflow,

@@ -5,7 +5,7 @@ import { site } from "@/data/site";
 import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { ScrollProgress } from "@/components/ScrollProgress";
-import { IntroSplash } from "@/components/IntroSplash";
+import { IntroSplashOnce } from "@/components/IntroSplashOnce";
 import { Analytics } from "@vercel/analytics/next";
 
 const fontSans = Inter({
@@ -58,7 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans" suppressHydrationWarning>
         <div className="min-h-svh overflow-x-hidden bg-bg text-fg noise">
           <ScrollProgress />
-          <IntroSplash />
+          <IntroSplashOnce />
           <NavBar />
 
           <main className="mx-auto w-full max-w-6xl px-4 py-10">{children}</main>
