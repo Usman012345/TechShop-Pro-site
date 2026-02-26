@@ -1,5 +1,5 @@
 import { requireAdminOrRedirect } from "@/lib/adminAuth";
-import { isPersistentStorageEnabled } from "@/lib/catalogStore";
+import { isDraftStorageEnabled } from "@/lib/draftCatalogStore";
 import { AdminClient } from "@/app/admin/ui/AdminClient";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 export default async function AdminPage() {
   await requireAdminOrRedirect();
-  const persistenceEnabled = await isPersistentStorageEnabled();
+  const persistenceEnabled = await isDraftStorageEnabled();
 
   return (
     <div className="space-y-6">

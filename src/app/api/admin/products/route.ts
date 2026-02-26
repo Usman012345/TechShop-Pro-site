@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from "@/lib/adminAuth";
-import { upsertProduct } from "@/lib/catalogStore";
+import { upsertDraftProduct } from "@/lib/draftCatalogStore";
 import type { Product } from "@/types/catalog";
+import { explainMongoError } from "@/lib/mongoErrors";
 
 export const runtime = "nodejs";
 
@@ -24,6 +25,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Missing product" }, { status: 400 });
   }
 
-  await upsertProduct(body.product);
-  return NextResponse.json({ ok: true });
+  try {
+    await upsertDraftProduct(body.product);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: explainMongoError(e) }, { status: 500 });
+  }
 }

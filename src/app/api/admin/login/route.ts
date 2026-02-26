@@ -1,33 +1,45 @@
 import { NextResponse } from "next/server";
 import { buildAdminCookie, createAdminSessionToken } from "@/lib/adminAuth";
+import { ensureAdminSeedUser, verifyAdminAuthKey } from "@/lib/adminUsers";
+import { explainMongoError } from "@/lib/mongoErrors";
 
 export const runtime = "nodejs";
-
-function getAdminPassword() {
-  // Set ADMIN_PASSWORD in Vercel → Project → Settings → Environment Variables.
-  // A local dev fallback is provided so the project runs out of the box.
-  return process.env.ADMIN_PASSWORD ?? "techshoppro";
-}
 
 export async function POST(req: Request) {
   const contentType = req.headers.get("content-type") ?? "";
 
-  let password = "";
+  let authKey = "";
   let next = "/admin";
 
   if (contentType.includes("application/json")) {
     const body = (await req.json().catch(() => null)) as
-      | { password?: string; next?: string }
+      | { authKey?: string; key?: string; password?: string; next?: string }
       | null;
-    password = body?.password ?? "";
+    authKey = body?.authKey ?? body?.key ?? body?.password ?? "";
     next = body?.next ?? next;
   } else {
     const form = await req.formData();
-    password = String(form.get("password") ?? "");
+    authKey = String(form.get("authKey") ?? form.get("key") ?? form.get("password") ?? "");
     next = String(form.get("next") ?? next);
   }
 
-  if (!password || password !== getAdminPassword()) {
+  // Ensure a first admin user exists (seed from env) for brand new deployments.
+  try {
+    await ensureAdminSeedUser();
+  } catch (e) {
+    const msg = explainMongoError(e);
+    if (!contentType.includes("application/json")) {
+      const url = new URL("/admin/login", req.url);
+      url.searchParams.set("error", "setup");
+      url.searchParams.set("reason", msg);
+      url.searchParams.set("next", next);
+      return NextResponse.redirect(url, 303);
+    }
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+  }
+
+  const ok = await verifyAdminAuthKey(authKey);
+  if (!ok) {
     // If this was a traditional form POST, redirect back with an error.
     if (!contentType.includes("application/json")) {
       const url = new URL("/admin/login", req.url);
@@ -38,7 +50,7 @@ export async function POST(req: Request) {
       return NextResponse.redirect(url, 303);
     }
 
-    return NextResponse.json({ ok: false, error: "Invalid password" }, { status: 401 });
+    return NextResponse.json({ ok: false, error: "Invalid authorization key" }, { status: 401 });
   }
 
   const token = createAdminSessionToken();

@@ -5,8 +5,9 @@ import {
   verifyAdminSessionToken,
   // NOTE: don't use requireAdminOrRedirect in API routes.
 } from "@/lib/adminAuth";
-import { getCatalog, resetCatalogToSeed, setCatalog } from "@/lib/catalogStore";
+import { getDraftCatalog, resetDraftToPublished, setDraftCatalog } from "@/lib/draftCatalogStore";
 import type { Catalog } from "@/types/catalog";
+import { explainMongoError } from "@/lib/mongoErrors";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,11 @@ async function assertAdmin() {
 export async function GET() {
   const unauth = await assertAdmin();
   if (unauth) return unauth;
-  return NextResponse.json({ ok: true, catalog: await getCatalog() });
+  try {
+    return NextResponse.json({ ok: true, catalog: await getDraftCatalog() });
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: explainMongoError(e) }, { status: 500 });
+  }
 }
 
 /**
@@ -38,8 +43,12 @@ export async function PUT(req: Request) {
     return NextResponse.json({ ok: false, error: "Missing catalog" }, { status: 400 });
   }
 
-  await setCatalog(body.catalog);
-  return NextResponse.json({ ok: true });
+  try {
+    await setDraftCatalog(body.catalog);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: explainMongoError(e) }, { status: 500 });
+  }
 }
 
 /**
@@ -52,8 +61,12 @@ export async function POST(req: Request) {
   // If action=reset
   const url = new URL(req.url);
   if (url.searchParams.get("action") === "reset") {
-    await resetCatalogToSeed();
-    return NextResponse.json({ ok: true });
+    try {
+      await resetDraftToPublished();
+      return NextResponse.json({ ok: true });
+    } catch (e) {
+      return NextResponse.json({ ok: false, error: explainMongoError(e) }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ ok: false, error: "Unsupported action" }, { status: 400 });

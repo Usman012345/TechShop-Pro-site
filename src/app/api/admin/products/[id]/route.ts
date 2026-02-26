@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from "@/lib/adminAuth";
-import { deleteProduct, patchProduct } from "@/lib/catalogStore";
+import { deleteDraftProduct, patchDraftProduct } from "@/lib/draftCatalogStore";
 import type { Product } from "@/types/catalog";
+import { explainMongoError } from "@/lib/mongoErrors";
 
 export const runtime = "nodejs";
 
@@ -29,12 +30,14 @@ export async function PATCH(
   }
 
   try {
-    const updated = await patchProduct(id, body.patch);
+    const updated = await patchDraftProduct(id, body.patch);
     return NextResponse.json({ ok: true, product: updated });
   } catch (e) {
+    const raw = e instanceof Error ? e.message : "Update failed";
+    const notFound = raw.toLowerCase().includes("not found");
     return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : "Update failed" },
-      { status: 400 }
+      { ok: false, error: notFound ? raw : explainMongoError(e) },
+      { status: notFound ? 404 : 500 }
     );
   }
 }
@@ -46,6 +49,10 @@ export async function DELETE(
   const unauth = await assertAdmin();
   if (unauth) return unauth;
   const { id } = await params;
-  await deleteProduct(id);
-  return NextResponse.json({ ok: true });
+  try {
+    await deleteDraftProduct(id);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: explainMongoError(e) }, { status: 500 });
+  }
 }

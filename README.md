@@ -51,36 +51,58 @@ This repo includes API routes and an admin panel, so it deploys as a normal Next
 - URL: `/admin`
 - Login: `/admin/login`
 
-Environment variables (recommended on Vercel):
+### MongoDB-backed admin auth + draft catalog
 
-- `ADMIN_PASSWORD` — admin login password
+This project uses **MongoDB** for:
+
+- **Admin credentials** (stored as a **bcrypt hash**)
+- **Draft catalog** (categories + products) so CRUD works on Vercel serverless
+
+Required env:
+
+- `MONGODB_URI`
+  - recommended: MongoDB Atlas connection string
+- `MONGODB_DB` (optional, default: `techshop_pro`)
+
+Admin env (used only to seed the *first* admin user in MongoDB if none exists):
+
+- `ADMIN_USERNAME` (default: `admin`)
+- `ADMIN_AUTH_KEY` (default: `T3ch$hopPr0`)
 - `ADMIN_SESSION_SECRET` — cookie signing secret
 
-Local dev defaults:
+---
 
-- If `ADMIN_PASSWORD` is not set, it defaults to: `techshoppro`
+### “Save all changes” → GitHub → Vercel auto‑redeploy
 
-### Persistent catalog storage (recommended for Vercel)
+The storefront uses a **published** catalog stored in:
 
-This project supports **persistent catalog storage** on serverless hosting via a connectionless REST
-KV store:
+- `src/data/catalogSeed.ts`
 
-**Option A — Vercel KV** (recommended if you want everything inside Vercel)
+The admin panel edits a **draft** in MongoDB.
 
-- `KV_REST_API_URL`
-- `KV_REST_API_TOKEN`
+When you click **Save all changes** in the admin panel, the server will:
 
-**Option B — Upstash Redis REST**
+1. Read the draft catalog from MongoDB
+2. Commit it to GitHub by rewriting `src/data/catalogSeed.ts`
+3. Vercel will detect the commit and **redeploy automatically**
 
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
+To enable publishing, set:
 
-Optional:
+- `GITHUB_TOKEN` (fine‑grained token with Contents: Read & Write)
+- `GITHUB_OWNER`
+- `GITHUB_REPO`
+- `GITHUB_BRANCH` (default: `main`)
+- `GITHUB_CATALOG_PATH` (default: `src/data/catalogSeed.ts`)
 
-- `TECHSHOP_CATALOG_KEY` (default: `techshoppro:catalog:v1`)
+---
 
-If no KV environment variables are set, the catalog falls back to **in-memory** storage (useful for
-local development, but not persistent on Vercel).
+### Uploading product images
+
+The product editor supports uploading images to **Vercel Blob** (recommended for Vercel Free/Hobby).
+
+Create a Blob store in Vercel → Storage. Vercel will inject:
+
+- `BLOB_READ_WRITE_TOKEN`
 
 ---
 
@@ -93,6 +115,10 @@ Seed data lives in:
 Public storefront reads from a server-side catalog store seeded by that file:
 
 - `src/lib/catalogStore.ts`
+
+Admin CRUD writes to a draft catalog in MongoDB:
+
+- `src/lib/draftCatalogStore.ts`
 
 Images live in:
 
@@ -126,7 +152,10 @@ src/
     catalogSeed.ts           # seed catalog
   lib/
     adminAuth.ts             # cookie signing/verification
-    catalogStore.ts          # KV (persistent) + in-memory fallback
+    adminUsers.ts            # MongoDB admin user (bcrypt)
+    mongodb.ts               # MongoDB connection helper
+    draftCatalogStore.ts     # MongoDB draft catalog for admin CRUD
+    catalogStore.ts          # published catalog for storefront
 ```
 
 ---

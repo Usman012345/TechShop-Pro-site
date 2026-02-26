@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from "@/lib/adminAuth";
-import { deleteCategory, patchCategory } from "@/lib/catalogStore";
+import { deleteDraftCategory, patchDraftCategory } from "@/lib/draftCatalogStore";
 import type { Category } from "@/types/catalog";
+import { explainMongoError } from "@/lib/mongoErrors";
 
 export const runtime = "nodejs";
 
@@ -30,12 +31,14 @@ export async function PATCH(
   }
 
   try {
-    const updated = await patchCategory(id, body.patch);
+    const updated = await patchDraftCategory(id, body.patch);
     return NextResponse.json({ ok: true, category: updated });
   } catch (e) {
+    const raw = e instanceof Error ? e.message : "Update failed";
+    const notFound = raw.toLowerCase().includes("not found");
     return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : "Update failed" },
-      { status: 400 }
+      { ok: false, error: notFound ? raw : explainMongoError(e) },
+      { status: notFound ? 404 : 500 }
     );
   }
 }
@@ -48,6 +51,10 @@ export async function DELETE(
   if (unauth) return unauth;
 
   const { id } = await params;
-  await deleteCategory(id);
-  return NextResponse.json({ ok: true });
+  try {
+    await deleteDraftCategory(id);
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    return NextResponse.json({ ok: false, error: explainMongoError(e) }, { status: 500 });
+  }
 }

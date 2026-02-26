@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Catalog, Category, CategoryId, Product, ProductAvailability } from "@/types/catalog";
 import type { IconName } from "@/components/icons";
+import type { PutBlobResult } from "@vercel/blob";
 import { Icons } from "@/components/icons";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ApiCatalogResponse = { ok: true; catalog: Catalog } | { ok: false; error: string };
@@ -124,8 +126,13 @@ export function AdminClient({
   const [error, setError] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<Catalog | null>(null);
 
-  const [filterCategory, setFilterCategory] = useState<CategoryId | "all">("all");
-  const [query, setQuery] = useState("");
+  // Product accordion UI
+  const [openCategoryIds, setOpenCategoryIds] = useState<Record<string, boolean>>({});
+  const allOpen = useMemo(() => {
+    const ids = (catalog?.categories ?? []).map((c) => c.id);
+    if (ids.length === 0) return false;
+    return ids.every((id) => openCategoryIds[id]);
+  }, [catalog?.categories, openCategoryIds]);
 
   // Category editor
   const [catEditOpen, setCatEditOpen] = useState(false);
@@ -135,6 +142,13 @@ export function AdminClient({
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [draft, setDraft] = useState<Product | null>(null);
+
+  const [publishing, setPublishing] = useState(false);
+  const [publishMsg, setPublishMsg] = useState<string | null>(null);
+  const [publishCommitUrl, setPublishCommitUrl] = useState<string | null>(null);
+
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
 
   async function refresh() {
     setLoading(true);
@@ -165,14 +179,21 @@ export function AdminClient({
     return m;
   }, [catalog]);
 
-  const productsView = useMemo(() => {
-    if (!catalog) return [];
-    const q = query.trim().toLowerCase();
-    return catalog.products
-      .filter((p) => (filterCategory === "all" ? true : p.categoryId === filterCategory))
-      .filter((p) => (q ? `${p.name} ${p.id}`.toLowerCase().includes(q) : true))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [catalog, filterCategory, query]);
+  const productsByCategory = useMemo(() => {
+    const m = new Map<CategoryId, Product[]>();
+    if (!catalog) return m;
+
+    for (const c of catalog.categories) m.set(c.id, []);
+    for (const p of catalog.products) {
+      const arr = m.get(p.categoryId) ?? [];
+      arr.push(p);
+      m.set(p.categoryId, arr);
+    }
+    for (const arr of m.values()) {
+      arr.sort((a, b) => a.name.localeCompare(b.name));
+    }
+    return m;
+  }, [catalog]);
 
   const categories = catalog?.categories ?? [];
 
@@ -251,6 +272,84 @@ export function AdminClient({
     await refresh();
   }
 
+  function toggleCategoryOpen(id: string) {
+    setOpenCategoryIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function openCategoryProducts(id: string) {
+    setOpenCategoryIds((prev) => ({ ...prev, [id]: true }));
+    // Scroll after state update.
+    setTimeout(() => {
+      document.getElementById(`cat-products-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
+  function toggleAllProductsOpen() {
+    if (allOpen) {
+      setOpenCategoryIds({});
+      return;
+    }
+    const next: Record<string, boolean> = {};
+    for (const c of categoriesView) next[c.id] = true;
+    setOpenCategoryIds(next);
+  }
+
+  async function publishAllChanges() {
+    const ok = confirm(
+      "Publish your draft catalog to GitHub? This will create a commit and Vercel will redeploy automatically."
+    );
+    if (!ok) return;
+
+    setPublishing(true);
+    setPublishMsg(null);
+    setPublishCommitUrl(null);
+
+    try {
+      const res = await fetch("/api/admin/publish", { method: "POST" });
+      const data = (await res.json().catch(() => null)) as
+        | { ok: true; commitUrl?: string }
+        | { ok: false; error: string }
+        | null;
+      if (!res.ok || !data || data.ok === false) {
+        throw new Error((data as any)?.error ?? "Publish failed");
+      }
+      setPublishMsg(
+        "Published to GitHub. Vercel will redeploy automatically when it detects the new commit."
+      );
+      if (data.commitUrl) setPublishCommitUrl(data.commitUrl);
+    } catch (e) {
+      setPublishMsg(e instanceof Error ? e.message : "Publish failed");
+    } finally {
+      setPublishing(false);
+    }
+  }
+
+  async function uploadProductImage(file: File) {
+    setImageUploading(true);
+    setImageUploadError(null);
+    try {
+      const res = await fetch(
+        `/api/admin/upload?filename=${encodeURIComponent(file.name)}&folder=products`,
+        {
+          method: "POST",
+          body: file,
+        }
+      );
+      const data = (await res.json().catch(() => null)) as
+        | { ok: true; blob: PutBlobResult }
+        | { ok: false; error: string }
+        | null;
+      if (!res.ok || !data || data.ok === false) {
+        throw new Error((data as any)?.error ?? "Upload failed");
+      }
+      setDraft((d) => (d ? { ...d, image: data.blob.url } : d));
+    } catch (e) {
+      setImageUploadError(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setImageUploading(false);
+    }
+  }
+
   function openCategoryEdit(c: Category) {
     setCatEditing(c);
     setCatDraft(structuredClone(c));
@@ -297,7 +396,6 @@ export function AdminClient({
     if (!ok) return;
     try {
       await removeCategory(id);
-      if (filterCategory === id) setFilterCategory("all");
       await refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Delete failed");
@@ -307,14 +405,15 @@ export function AdminClient({
   function openEdit(p: Product) {
     setEditing(p);
     setDraft(structuredClone(p));
+    setImageUploadError(null);
     setEditOpen(true);
   }
 
-  function openCreate() {
+  function openCreate(categoryId?: CategoryId) {
     const base: Product = {
       id: "",
       name: "",
-      categoryId: categoriesView[0]?.id ?? "security",
+      categoryId: categoryId ?? categoriesView[0]?.id ?? "security",
       availability: "available",
       isActive: true,
       image: "/products/placeholder.png",
@@ -322,6 +421,7 @@ export function AdminClient({
     };
     setEditing(null);
     setDraft(base);
+    setImageUploadError(null);
     setEditOpen(true);
   }
 
@@ -421,21 +521,26 @@ export function AdminClient({
     <div className="grid gap-6">
       {!persistenceEnabled ? (
         <div className="rounded-3xl border border-gold/25 bg-gold/10 p-5 text-sm text-muted">
-          <div className="font-display text-base text-gold2">Persistence is OFF</div>
+          <div className="font-display text-base text-gold2">MongoDB is not configured or not reachable</div>
           <p className="mt-1">
-            Your catalog is currently stored <span className="text-gold2">in memory</span>, so
-            changes may reset on redeploy/restart.
+            The admin panel uses <span className="text-gold2">MongoDB</span> to store your draft
+            catalog and hashed admin credentials.
           </p>
           <p className="mt-2 text-xs">
-            To enable persistence on Vercel Free Tier, configure <span className="text-gold2">Vercel KV</span>
-            (KV_REST_API_URL / KV_REST_API_TOKEN) or <span className="text-gold2">Upstash Redis REST</span>
-            (UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN).
+            Set <span className="text-gold2">MONGODB_URI</span> (and optionally
+            <span className="text-gold2"> MONGODB_DB</span>) in Vercel → Project → Settings →
+            Environment Variables. In MongoDB Atlas, make sure Network Access allows connections
+            from Vercel (for quick testing, allow 0.0.0.0/0).
           </p>
         </div>
       ) : (
         <div className="rounded-3xl border border-fg/10 bg-panel/45 p-5 text-sm text-muted">
-          <div className="font-display text-base text-fg/95">Persistence is ON</div>
-          <p className="mt-1">Catalog changes will be saved in your KV storage.</p>
+          <div className="font-display text-base text-fg/95">Draft is saved in MongoDB</div>
+          <p className="mt-1">
+            Your edits are saved as a <span className="text-gold2">draft</span>. When you're
+            ready to update the live site, click <span className="text-gold2">Save all changes</span>
+            to publish to GitHub and trigger a Vercel redeploy.
+          </p>
         </div>
       )}
 
@@ -448,6 +553,19 @@ export function AdminClient({
             className="inline-flex h-11 items-center justify-center rounded-full border border-gold/30 bg-gold/15 px-5 text-sm text-gold2 shadow-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
           >
             + Add product
+          </button>
+
+          <button
+            type="button"
+            onClick={publishAllChanges}
+            disabled={publishing}
+            className={cn(
+              "inline-flex h-11 items-center justify-center rounded-full border border-fg/10 bg-panel/45 px-5 text-sm text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70",
+              publishing && "opacity-60 pointer-events-none"
+            )}
+            title="Commit draft catalog to GitHub to trigger a Vercel redeploy"
+          >
+            {publishing ? "Saving…" : "Save all changes"}
           </button>
 
           <button
@@ -493,6 +611,23 @@ export function AdminClient({
         </button>
       </div>
 
+      {publishMsg ? (
+        <div className="rounded-2xl border border-fg/10 bg-bg/25 p-4 text-sm text-muted">
+          <div className="font-display text-base text-fg/95">Publish</div>
+          <p className="mt-1">{publishMsg}</p>
+          {publishCommitUrl ? (
+            <a
+              href={publishCommitUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-flex text-sm text-gold2 underline underline-offset-4"
+            >
+              View commit on GitHub
+            </a>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* Categories */}
       <section className="rounded-3xl border border-fg/10 bg-panel/45 p-5 md:p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
@@ -514,10 +649,13 @@ export function AdminClient({
             </button>
             <button
               type="button"
-              onClick={() => setFilterCategory("all")}
-              className="inline-flex h-11 items-center justify-center rounded-full border border-fg/10 bg-panel/45 px-5 text-sm text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
+              onClick={toggleAllProductsOpen}
+              className={cn(
+                "inline-flex h-11 items-center justify-center rounded-full border border-fg/10 bg-panel/45 px-5 text-sm text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70",
+                allOpen && "border-gold/30"
+              )}
             >
-              Show all products
+              {allOpen ? "Collapse all products" : "Show all products"}
             </button>
           </div>
         </div>
@@ -560,13 +698,13 @@ export function AdminClient({
                       <div className="flex flex-wrap gap-2">
                         <button
                           type="button"
-                          onClick={() => setFilterCategory(c.id)}
+                          onClick={() => openCategoryProducts(c.id)}
                           className={cn(
                             "rounded-full border border-fg/10 bg-panel/45 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55",
-                            filterCategory === c.id && "border-gold/30"
+                            openCategoryIds[c.id] && "border-gold/30"
                           )}
                         >
-                          Filter
+                          Products
                         </button>
                         <button
                           type="button"
@@ -596,103 +734,152 @@ export function AdminClient({
         </div>
       </section>
 
-      {/* Product list */}
+      {/* Products by category (dropdowns) */}
       <section className="rounded-3xl border border-fg/10 bg-panel/45 p-5 md:p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="text-xs uppercase tracking-[0.30em] text-muted">Products</div>
-            <div className="mt-2 font-display text-xl">Manage</div>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <TextInput
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by name or id…"
-            />
-          </div>
+        <div>
+          <div className="text-xs uppercase tracking-[0.30em] text-muted">Products</div>
+          <div className="mt-2 font-display text-xl">Manage by category</div>
+          <p className="mt-2 max-w-2xl text-sm text-muted">
+            Click a category to expand its products. The “Show all products” toggle above will open
+            or collapse all category dropdowns.
+          </p>
         </div>
 
-        <div className="mt-4 overflow-auto rounded-2xl border border-fg/10">
-          <table className="min-w-[920px] w-full border-collapse text-sm">
-            <thead className="bg-bg/30">
-              <tr className="text-left text-xs text-muted">
-                <th className="p-3">Active</th>
-                <th className="p-3">Image</th>
-                <th className="p-3">Name</th>
-                <th className="p-3">Category</th>
-                <th className="p-3">Plan</th>
-                <th className="p-3">Price</th>
-                <th className="p-3">Availability</th>
-                <th className="p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productsView.map((p) => (
-                <tr key={p.id} className="border-t border-fg/10">
-                  <td className="p-3">
+        <div className="mt-5 grid gap-3">
+          {categoriesView.map((c) => {
+            const Icon = Icons[c.iconName] ?? Icons.Sparkles;
+            const list = productsByCategory.get(c.id) ?? [];
+            const open = Boolean(openCategoryIds[c.id]);
+            const activeCount = counts.get(c.id) ?? 0;
+            return (
+              <div
+                key={c.id}
+                id={`cat-products-${c.id}`}
+                className="rounded-2xl border border-fg/10 bg-bg/20"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleCategoryOpen(c.id)}
+                  className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition hover:bg-bg/25"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gold/25 bg-bg/35 text-gold2 shadow-gold">
+                      <Icon size={18} />
+                    </span>
+                    <div>
+                      <div className="font-display text-base text-fg/95">{c.name}</div>
+                      <div className="mt-1 text-xs text-muted">
+                        {c.id} • {list.length} total • {activeCount} active
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => handleToggleActive(p)}
-                      className={cn(
-                        "h-8 w-14 rounded-full border border-fg/10 bg-bg/35 px-1 transition",
-                        p.isActive && "border-gold/30 bg-gold/15"
-                      )}
-                      aria-label="Toggle active"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openCreate(c.id);
+                      }}
+                      className="inline-flex h-9 items-center justify-center rounded-full border border-gold/30 bg-gold/15 px-4 text-xs text-gold2 shadow-gold transition hover:border-gold/50 hover:bg-gold/20"
                     >
-                      <span
-                        className={cn(
-                          "block h-6 w-6 rounded-full bg-fg/70 transition",
-                          p.isActive && "translate-x-6 bg-gold2"
-                        )}
-                      />
+                      + Add
                     </button>
-                  </td>
-                  <td className="p-3">
-                    <div className="h-10 w-16 overflow-hidden rounded-lg border border-fg/10 bg-bg/35">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={p.image ?? "/products/placeholder.png"}
-                        alt=""
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <div className="text-fg/95">{p.name}</div>
-                    <div className="mt-1 text-xs text-muted">{p.id}</div>
-                  </td>
-                  <td className="p-3 text-muted">{p.categoryId}</td>
-                  <td className="p-3 text-muted">{p.planLabel ?? "—"}</td>
-                  <td className="p-3 text-gold2">{p.priceLabel ?? "—"}</td>
-                  <td className="p-3 text-muted">{p.availability}</td>
-                  <td className="p-3">
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(p)}
-                        className="rounded-full border border-fg/10 bg-panel/45 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(p.id)}
-                        className="rounded-full border border-fg/10 bg-bg/25 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-bg/30"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    <ChevronDown
+                      size={18}
+                      className={cn("text-muted transition", open && "rotate-180")}
+                      aria-hidden="true"
+                    />
+                  </div>
+                </button>
 
-        {productsView.length === 0 ? (
-          <p className="mt-4 text-sm text-muted">No products match your filters.</p>
-        ) : null}
+                {open ? (
+                  <div className="border-t border-fg/10 p-4">
+                    {list.length === 0 ? (
+                      <p className="text-sm text-muted">No products in this category yet.</p>
+                    ) : (
+                      <div className="overflow-auto rounded-2xl border border-fg/10">
+                        <table className="min-w-[920px] w-full border-collapse text-sm">
+                          <thead className="bg-bg/30">
+                            <tr className="text-left text-xs text-muted">
+                              <th className="p-3">Active</th>
+                              <th className="p-3">Image</th>
+                              <th className="p-3">Name</th>
+                              <th className="p-3">Plan</th>
+                              <th className="p-3">Price</th>
+                              <th className="p-3">Availability</th>
+                              <th className="p-3">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {list.map((p) => (
+                              <tr key={p.id} className="border-t border-fg/10">
+                                <td className="p-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleActive(p)}
+                                    className={cn(
+                                      "h-8 w-14 rounded-full border border-fg/10 bg-bg/35 px-1 transition",
+                                      p.isActive && "border-gold/30 bg-gold/15"
+                                    )}
+                                    aria-label="Toggle active"
+                                  >
+                                    <span
+                                      className={cn(
+                                        "block h-6 w-6 rounded-full bg-fg/70 transition",
+                                        p.isActive && "translate-x-6 bg-gold2"
+                                      )}
+                                    />
+                                  </button>
+                                </td>
+                                <td className="p-3">
+                                  <div className="h-10 w-16 overflow-hidden rounded-lg border border-fg/10 bg-bg/35">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={p.image ?? "/products/placeholder.png"}
+                                      alt=""
+                                      className="h-full w-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  </div>
+                                </td>
+                                <td className="p-3">
+                                  <div className="text-fg/95">{p.name}</div>
+                                  <div className="mt-1 text-xs text-muted">{p.id}</div>
+                                </td>
+                                <td className="p-3 text-muted">{p.planLabel ?? "—"}</td>
+                                <td className="p-3 text-gold2">{p.priceLabel ?? "—"}</td>
+                                <td className="p-3 text-muted">{p.availability}</td>
+                                <td className="p-3">
+                                  <div className="flex gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEdit(p)}
+                                      className="rounded-full border border-fg/10 bg-panel/45 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDelete(p.id)}
+                                      className="rounded-full border border-fg/10 bg-bg/25 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-bg/30"
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </section>
 
       {/* Category modal */}
@@ -946,15 +1133,55 @@ export function AdminClient({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Image path (in /public)">
-                <TextInput
-                  value={draft.image ?? ""}
-                  onChange={(e) =>
-                    setDraft((d) => (d ? { ...d, image: e.target.value } : d))
-                  }
-                  placeholder="/products/placeholder.png"
-                />
+              <Field label="Product image">
+                <div className="grid gap-2">
+                  <TextInput
+                    value={draft.image ?? ""}
+                    onChange={(e) =>
+                      setDraft((d) => (d ? { ...d, image: e.target.value } : d))
+                    }
+                    placeholder="Upload an image or paste a URL…"
+                  />
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <label className="inline-flex h-10 cursor-pointer items-center justify-center rounded-full border border-fg/10 bg-panel/45 px-4 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55">
+                      {imageUploading ? "Uploading…" : "Upload image"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        disabled={imageUploading}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) uploadProductImage(f);
+                          e.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+
+                    <div className="text-xs text-muted">
+                      Uses <span className="text-gold2">Vercel Blob</span> (BLOB_READ_WRITE_TOKEN).
+                    </div>
+                  </div>
+
+                  {imageUploadError ? (
+                    <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-2 text-xs text-red-200">
+                      {imageUploadError}
+                    </div>
+                  ) : null}
+
+                  <div className="h-24 overflow-hidden rounded-2xl border border-fg/10 bg-bg/35">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={draft.image ?? "/products/placeholder.png"}
+                      alt=""
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                </div>
               </Field>
+
               <Field label="Logo watermark (optional)">
                 <TextInput
                   value={draft.logo ?? ""}

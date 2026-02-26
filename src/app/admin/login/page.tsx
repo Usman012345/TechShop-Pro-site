@@ -5,24 +5,33 @@ export default async function AdminLoginPage({
   searchParams,
 }: {
   // Next.js 15+ makes searchParams async.
-  searchParams?: Promise<{ next?: string; error?: string }>;
+  searchParams?: Promise<{ next?: string; error?: string; reason?: string }>;
 }) {
   const sp = searchParams ? await searchParams : undefined;
   const next = sp?.next ?? "/admin";
-  const showError = sp?.error === "1";
+  const error = sp?.error;
+  const reason = sp?.reason;
+
+  const errorMessage =
+    error === "1"
+      ? "Invalid authorization key. Please try again."
+      : error
+        ? reason || "Admin setup/login failed. Check MongoDB + ADMIN_AUTH_KEY env vars."
+        : null;
 
   return (
-    <div className="mx-auto w-full max-w-lg">
+    <div className="mx-auto w-full max-w-lg" suppressHydrationWarning>
       <div className="rounded-3xl border border-fg/10 bg-panel/45 p-6 md:p-8">
         <div className="text-xs uppercase tracking-[0.30em] text-gold2/80">Admin</div>
         <h1 className="mt-3 font-display text-2xl md:text-3xl">TechShop Pro Admin</h1>
         <p className="mt-2 text-sm text-muted">
-          Password-protected admin panel for managing categories and products (contact-only website).
+          Enter your admin authorization key to manage categories and products. The key is stored in
+          MongoDB as a bcrypt hash.
         </p>
 
-        {showError ? (
+        {errorMessage ? (
           <div className="mt-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
-            Invalid password. Please try again.
+            {errorMessage}
           </div>
         ) : null}
 
@@ -30,15 +39,19 @@ export default async function AdminLoginPage({
           className="mt-6 grid gap-3"
           method="post"
           action="/api/admin/login"
+          suppressHydrationWarning
         >
           <input type="hidden" name="next" value={next} />
           <label className="grid gap-2">
-            <span className="text-xs text-muted">Admin password</span>
+            <span className="text-xs text-muted">Your Admin Authorization Key</span>
             <input
-              name="password"
+              name="authKey"
               type="password"
               required
-              placeholder="Enter password"
+              placeholder="Enter authorization key"
+              autoCapitalize="none"
+              autoCorrect="off"
+              suppressHydrationWarning
               className="h-11 rounded-xl border border-fg/10 bg-bg/35 px-4 text-sm text-fg placeholder:text-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70"
             />
           </label>
@@ -51,8 +64,9 @@ export default async function AdminLoginPage({
           </button>
 
           <p className="mt-2 text-xs text-muted">
-            Local dev tip: default password is <span className="text-gold2">techshoppro</span>.
-            Change it by setting <span className="text-gold2">ADMIN_PASSWORD</span>.
+            Default key: <span className="text-gold2">T3ch$hopPr0</span>. For production,
+            you can override it by setting <span className="text-gold2">ADMIN_AUTH_KEY</span>
+            in your environment variables.
           </p>
         </form>
       </div>
