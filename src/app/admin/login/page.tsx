@@ -62,12 +62,6 @@ export default async function AdminLoginPage({
           >
             Sign in
           </button>
-
-          <p className="mt-2 text-xs text-muted">
-            Default key: <span className="text-gold2">T3ch$hopPr0</span>. For production,
-            you can override it by setting <span className="text-gold2">ADMIN_AUTH_KEY</span>
-            in your environment variables.
-          </p>
         </form>
       </div>
     </div>

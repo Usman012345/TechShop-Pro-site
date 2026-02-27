@@ -549,7 +549,7 @@ export function AdminClient({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={openCreate}
+            onClick={() => openCreate()}
             className="inline-flex h-11 items-center justify-center rounded-full border border-gold/30 bg-gold/15 px-5 text-sm text-gold2 shadow-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
           >
             + Add product
