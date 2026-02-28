@@ -143,6 +143,7 @@ export function AdminClient({
   const [editing, setEditing] = useState<Product | null>(null);
   const [draft, setDraft] = useState<Product | null>(null);
   const [priceInput, setPriceInput] = useState<string>("0.00");
+  const [badgesInput, setBadgesInput] = useState<string>("");
 
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
@@ -371,8 +372,16 @@ export function AdminClient({
 
   function openEdit(p: Product) {
     setEditing(p);
-    setDraft(structuredClone(p));
     setPriceInput(Number.isFinite(p.price) ? p.price.toFixed(2) : "0.00");
+    const raw = p as any;
+    const arr = Array.isArray(raw.badges) ? raw.badges : [];
+    const cleaned = arr
+      .map((x: unknown) => (typeof x === "string" ? x.trim() : ""))
+      .filter(Boolean);
+    const legacy = typeof p.badge === "string" ? p.badge.trim() : "";
+    const normalizedBadges = cleaned.length ? cleaned : legacy ? [legacy] : [];
+    setDraft(structuredClone({ ...p, badges: normalizedBadges, badge: undefined }));
+    setBadgesInput(normalizedBadges.join(", "));
     setImageUploadError(null);
     setEditOpen(true);
   }
@@ -387,10 +396,12 @@ export function AdminClient({
       image: "/products/placeholder.png",
       price: 0,
       showPrice: true,
+      badges: [],
     };
     setEditing(null);
     setDraft(base);
     setPriceInput("0.00");
+    setBadgesInput("");
     setImageUploadError(null);
     setEditOpen(true);
   }
@@ -1185,14 +1196,21 @@ export function AdminClient({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Badge (optional)">
+              <Field label="Badges (comma separated)">
                 <TextInput
-                  value={draft.badge ?? ""}
-                  onChange={(e) =>
-                    setDraft((d) => (d ? { ...d, badge: e.target.value } : d))
-                  }
-                  placeholder="Sale / Limited / New"
+                  value={badgesInput}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setBadgesInput(raw);
+                    const badges = raw
+                      .split(",")
+                      .map((s) => s.trim())
+                      .filter(Boolean);
+                    setDraft((d) => (d ? { ...d, badges, badge: undefined } : d));
+                  }}
+                  placeholder="New, Best Seller, Warranty"
                 />
+                <div className="text-[11px] text-muted">Shown as tags on product cards.</div>
               </Field>
               <div className="hidden md:block" />
             </div>

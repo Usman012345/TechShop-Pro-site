@@ -4,10 +4,13 @@ import { site, WHATSAPP_GROUP_LINK, whatsappLink } from "@/data/site";
 import { LogoMark } from "@/components/LogoMark";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ShoppingCart } from "lucide-react";
+import { useCart } from "@/components/cart/CartProvider";
 
 export function NavBar() {
   const waHref = whatsappLink("السلام عليكم");
   const pathname = usePathname() || "/";
+  const { count } = useCart();
 
   // Requirement:
   // - On the public storefront (home, etc.): show Login
@@ -64,6 +67,23 @@ export function NavBar() {
           >
             Contact
           </Link>
+
+          {!isAdminRoute ? (
+            <Link
+              href="/cart"
+              className="relative shrink-0 rounded-full border border-fg/10 bg-panel/40 px-3 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:px-4 sm:text-sm"
+              aria-label="Open cart"
+            >
+              <span className="inline-flex items-center gap-2">
+                <ShoppingCart size={16} /> Cart
+              </span>
+              {count > 0 ? (
+                <span className="absolute -right-1 -top-1 grid h-5 min-w-5 place-items-center rounded-full border border-gold/30 bg-gold/20 px-1 text-[10px] text-gold2 shadow-gold">
+                  {count}
+                </span>
+              ) : null}
+            </Link>
+          ) : null}
 
           <a
             href={waHref}

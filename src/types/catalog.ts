@@ -4,7 +4,8 @@ import type { IconName } from "@/components/icons";
  * Catalog types for TechShop Pro.
  *
  * Notes:
- * - No checkout/order flow is implemented (contact-only).
+ * - Cart + quote-style checkout is implemented.
+ * - Final purchase is completed by contacting the seller (no online payments).
  */
 
 /**
@@ -48,7 +49,7 @@ export type Product = {
    * Price (display-only).
    *
    * - Stored as a number to keep admin editing simple.
-   * - No checkout/currency math is implemented in this project.
+   * - Used for cart totals (checkout is still completed via contact).
    */
   price: number;
 
@@ -75,6 +76,13 @@ export type Product = {
 
   /** Small badge shown on the image (e.g. “Sale”, “Limited”). */
   badge?: string;
+
+  /**
+   * Multiple badges/tags shown on the storefront.
+   *
+   * Admin UI edits this as a comma-separated string, stored as an array.
+   */
+  badges?: string[];
 
   availability: ProductAvailability;
   isActive: boolean;

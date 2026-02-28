@@ -6,6 +6,7 @@ import { NavBar } from "@/components/NavBar";
 import { Footer } from "@/components/Footer";
 import { ScrollProgress } from "@/components/ScrollProgress";
 import { IntroSplashOnce } from "@/components/IntroSplashOnce";
+import { CartProvider } from "@/components/cart/CartProvider";
 import { Analytics } from "@vercel/analytics/next";
 
 const fontSans = Inter({
@@ -56,15 +57,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <body className="font-sans" suppressHydrationWarning>
-        <div className="min-h-svh overflow-x-hidden bg-bg text-fg noise">
-          <ScrollProgress />
-          <IntroSplashOnce />
-          <NavBar />
+        <CartProvider>
+          <div className="min-h-svh overflow-x-hidden bg-bg text-fg noise">
+            <ScrollProgress />
+            <IntroSplashOnce />
+            <NavBar />
 
-          <main className="mx-auto w-full max-w-6xl px-4 py-10">{children}</main>
+            <main className="mx-auto w-full max-w-6xl px-4 py-10">{children}</main>
 
-          <Footer />
-        </div>
+            <Footer />
+          </div>
+        </CartProvider>
 
         {/* Vercel Web Analytics */}
         <Analytics />

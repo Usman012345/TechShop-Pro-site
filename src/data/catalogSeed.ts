@@ -4,9 +4,9 @@ import type { Catalog, Category, Product } from "@/types/catalog";
  * Portfolio/demo seed data.
  *
  * IMPORTANT:
- * - This project intentionally does NOT implement payments or a checkout.
- * - “Contact” is the only CTA.
- * - Prices are display-only numbers (no checkout/currency math).
+ * - This project does NOT implement online payments.
+ * - A cart + quote-style checkout exists; final purchase is completed via contact.
+ * - Prices are stored as numbers and used for cart totals.
  * - `priceLabel` is optional legacy/extra text.
  */
 

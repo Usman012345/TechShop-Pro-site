@@ -48,6 +48,7 @@ function normalizeCatalog(next: Catalog): Catalog {
     products: Array.isArray(next.products)
       ? next.products.map((p) => {
           const raw = p as any;
+          const badgesRaw = Array.isArray(raw.badges) ? raw.badges : [];
           return {
             ...p,
             // Backward-compat: older drafts/seed data may not have `price`.
@@ -58,6 +59,12 @@ function normalizeCatalog(next: Catalog): Catalog {
             // Backward-compat: allow hiding the numeric price.
             // If omitted, we default to showing the price.
             showPrice: typeof raw.showPrice === "boolean" ? raw.showPrice : true,
+
+            // Backward-compat: `badges` is optional.
+            // Store it as a clean string array.
+            badges: badgesRaw
+              .map((x: unknown) => (typeof x === "string" ? x.trim() : ""))
+              .filter(Boolean),
           };
         })
       : [],
