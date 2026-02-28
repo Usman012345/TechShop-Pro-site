@@ -3,7 +3,11 @@ import { redirect } from "next/navigation";
 import { createHmac, timingSafeEqual } from "crypto";
 
 export const ADMIN_COOKIE_NAME = "tsp_admin";
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+// Admin session duration.
+// Requirement: keep the admin session alive for 1 hour after login.
+const SESSION_TTL_MS = 1000 * 60 * 60; // 1 hour
+// Bump this if the session token structure/semantics change.
+const SESSION_VERSION = 2;
 
 function getSecret() {
   // In production, set ADMIN_SESSION_SECRET.
@@ -21,7 +25,7 @@ function sign(data: string) {
 
 export function createAdminSessionToken() {
   const payload = {
-    v: 1,
+    v: SESSION_VERSION,
     exp: Date.now() + SESSION_TTL_MS,
   };
   const data = base64url(JSON.stringify(payload));
@@ -40,6 +44,7 @@ export function verifyAdminSessionToken(token: string | undefined | null) {
     if (a.length !== b.length) return false;
     if (!timingSafeEqual(a, b)) return false;
     const decoded = JSON.parse(Buffer.from(data, "base64url").toString("utf8"));
+    if (decoded?.v !== SESSION_VERSION) return false;
     return typeof decoded?.exp === "number" && Date.now() < decoded.exp;
   } catch {
     return false;

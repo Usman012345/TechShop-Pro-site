@@ -107,11 +107,13 @@ function Modal({
         onClick={onClose}
         aria-label="Close modal"
       />
-      <div className="relative mx-auto mt-16 w-[min(860px,92vw)] overflow-hidden rounded-3xl border border-fg/10 bg-panel/80 shadow-2xl">
+      <div className="relative mx-auto mt-10 w-[min(860px,92vw)] overflow-hidden rounded-3xl border border-fg/10 bg-panel/80 shadow-2xl sm:mt-16">
         <div className="border-b border-fg/10 bg-bg/35 px-6 py-4 sm:backdrop-blur">
           <div className="font-display text-xl text-gold2">{title}</div>
         </div>
-        <div className="max-h-[78svh] overflow-auto p-6">{children}</div>
+        <div className="max-h-[78svh] overflow-auto overscroll-contain p-6 [-webkit-overflow-scrolling:touch]">
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -610,8 +612,72 @@ export function AdminClient({
           </div>
         </div>
 
-        <div className="mt-4 overflow-auto rounded-2xl border border-fg/10">
-          <table className="min-w-[920px] w-full border-collapse text-sm">
+        {/* Mobile-friendly category cards */}
+        <div className="mt-4 grid gap-3 md:hidden">
+          {categoriesView.map((c) => {
+            const Icon = Icons[c.iconName] ?? Icons.Sparkles;
+            return (
+              <div key={c.id} className="rounded-2xl border border-fg/10 bg-bg/25 p-4">
+                <div className="flex items-start gap-3">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gold/25 bg-bg/35 text-gold2 shadow-gold">
+                    <Icon size={16} />
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="min-w-0 truncate font-display text-base text-fg/95">{c.name}</div>
+                      <span className="rounded-full border border-fg/10 bg-bg/20 px-3 py-1 text-[11px] text-muted">
+                        {c.id}
+                      </span>
+                    </div>
+
+                    {c.description ? <div className="mt-1 text-xs text-muted">{c.description}</div> : null}
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-fg/10 bg-bg/20 px-3 py-1 text-[11px] text-muted">
+                        Order: {typeof c.sortOrder === "number" ? c.sortOrder : "—"}
+                      </span>
+                      <span className="rounded-full border border-gold/25 bg-gold/10 px-3 py-1 text-[11px] text-gold2">
+                        {counts.get(c.id) ?? 0} active
+                      </span>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openCategoryProducts(c.id)}
+                        className={cn(
+                          "rounded-full border border-fg/10 bg-panel/45 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55",
+                          openCategoryIds[c.id] && "border-gold/30"
+                        )}
+                      >
+                        Products
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => openCategoryEdit(c)}
+                        className="rounded-full border border-fg/10 bg-panel/45 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCategoryDelete(c.id)}
+                        className="rounded-full border border-fg/10 bg-bg/25 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-bg/30"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop table */}
+        <div className="mt-4 hidden overflow-auto rounded-2xl border border-fg/10 md:block [-webkit-overflow-scrolling:touch]">
+          <table className="w-full min-w-[920px] border-collapse text-sm">
             <thead className="bg-bg/30">
               <tr className="text-left text-xs text-muted">
                 <th className="p-3">Order</th>
@@ -628,7 +694,9 @@ export function AdminClient({
                 const Icon = Icons[c.iconName] ?? Icons.Sparkles;
                 return (
                   <tr key={c.id} className="border-t border-fg/10">
-                    <td className="p-3 text-muted">{typeof c.sortOrder === "number" ? c.sortOrder : "—"}</td>
+                    <td className="p-3 text-muted">
+                      {typeof c.sortOrder === "number" ? c.sortOrder : "—"}
+                    </td>
                     <td className="p-3">
                       <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gold/25 bg-bg/35 text-gold2 shadow-gold">
                         <Icon size={16} />
@@ -765,60 +833,67 @@ export function AdminClient({
                     {list.length === 0 ? (
                       <p className="text-sm text-muted">No products in this category yet.</p>
                     ) : (
-                      <div className="overflow-auto rounded-2xl border border-fg/10">
-                        <table className="min-w-[920px] w-full border-collapse text-sm">
-                          <thead className="bg-bg/30">
-                            <tr className="text-left text-xs text-muted">
-                              <th className="p-3">Active</th>
-                              <th className="p-3">Image</th>
-                              <th className="p-3">Name</th>
-                              <th className="p-3">Plan</th>
-                              <th className="p-3">Price</th>
-                              <th className="p-3">Availability</th>
-                              <th className="p-3">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {list.map((p) => (
-                              <tr key={p.id} className="border-t border-fg/10">
-                                <td className="p-3">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleActive(p)}
-                                    className={cn(
-                                      "h-8 w-14 rounded-full border border-fg/10 bg-bg/35 px-1 transition",
-                                      p.isActive && "border-gold/30 bg-gold/15"
-                                    )}
-                                    aria-label="Toggle active"
-                                  >
+                      <>
+                        {/* Mobile-friendly product cards */}
+                        <div className="grid gap-3 md:hidden">
+                          {list.map((p) => (
+                            <div key={p.id} className="rounded-2xl border border-fg/10 bg-bg/25 p-4">
+                              <div className="flex items-start gap-3">
+                                <div className="h-12 w-20 overflow-hidden rounded-xl border border-fg/10 bg-bg/35">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={p.image ?? "/products/placeholder.png"}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                  />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                      <div className="truncate font-display text-base text-fg/95">{p.name}</div>
+                                      <div className="mt-1 text-xs text-muted">{p.id}</div>
+                                      {p.planLabel ? (
+                                        <div className="mt-1 text-xs text-muted">{p.planLabel}</div>
+                                      ) : null}
+                                    </div>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleActive(p)}
+                                      className={cn(
+                                        "h-8 w-14 rounded-full border border-fg/10 bg-bg/35 px-1 transition",
+                                        p.isActive && "border-gold/30 bg-gold/15"
+                                      )}
+                                      aria-label="Toggle active"
+                                    >
+                                      <span
+                                        className={cn(
+                                          "block h-6 w-6 rounded-full bg-fg/70 transition",
+                                          p.isActive && "translate-x-6 bg-gold2"
+                                        )}
+                                      />
+                                    </button>
+                                  </div>
+
+                                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                                    <span className="rounded-full border border-fg/10 bg-bg/20 px-3 py-1 text-[11px] text-muted">
+                                      {p.availability}
+                                    </span>
                                     <span
                                       className={cn(
-                                        "block h-6 w-6 rounded-full bg-fg/70 transition",
-                                        p.isActive && "translate-x-6 bg-gold2"
+                                        "rounded-full border px-3 py-1 text-[11px]",
+                                        p.showPrice === false
+                                          ? "border-fg/10 bg-bg/20 text-muted"
+                                          : "border-gold/25 bg-gold/10 text-gold2"
                                       )}
-                                    />
-                                  </button>
-                                </td>
-                                <td className="p-3">
-                                  <div className="h-10 w-16 overflow-hidden rounded-lg border border-fg/10 bg-bg/35">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                      src={p.image ?? "/products/placeholder.png"}
-                                      alt=""
-                                      className="h-full w-full object-cover"
-                                      loading="lazy"
-                                    />
+                                    >
+                                      {p.showPrice === false ? "Contact for price" : formatPriceRs(p.price)}
+                                    </span>
                                   </div>
-                                </td>
-                                <td className="p-3">
-                                  <div className="text-fg/95">{p.name}</div>
-                                  <div className="mt-1 text-xs text-muted">{p.id}</div>
-                                </td>
-                                <td className="p-3 text-muted">{p.planLabel ?? "—"}</td>
-                                <td className={cn("p-3", p.showPrice === false ? "text-muted" : "text-gold2")}>{p.showPrice === false ? "Contact for price" : formatPriceRs(p.price)}</td>
-                                <td className="p-3 text-muted">{p.availability}</td>
-                                <td className="p-3">
-                                  <div className="flex gap-2">
+
+                                  <div className="mt-3 flex flex-wrap gap-2">
                                     <button
                                       type="button"
                                       onClick={() => openEdit(p)}
@@ -834,12 +909,91 @@ export function AdminClient({
                                       Delete
                                     </button>
                                   </div>
-                                </td>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Desktop table */}
+                        <div className="hidden overflow-auto rounded-2xl border border-fg/10 md:block [-webkit-overflow-scrolling:touch]">
+                          <table className="w-full min-w-[920px] border-collapse text-sm">
+                            <thead className="bg-bg/30">
+                              <tr className="text-left text-xs text-muted">
+                                <th className="p-3">Active</th>
+                                <th className="p-3">Image</th>
+                                <th className="p-3">Name</th>
+                                <th className="p-3">Plan</th>
+                                <th className="p-3">Price</th>
+                                <th className="p-3">Availability</th>
+                                <th className="p-3">Actions</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                            </thead>
+                            <tbody>
+                              {list.map((p) => (
+                                <tr key={p.id} className="border-t border-fg/10">
+                                  <td className="p-3">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleActive(p)}
+                                      className={cn(
+                                        "h-8 w-14 rounded-full border border-fg/10 bg-bg/35 px-1 transition",
+                                        p.isActive && "border-gold/30 bg-gold/15"
+                                      )}
+                                      aria-label="Toggle active"
+                                    >
+                                      <span
+                                        className={cn(
+                                          "block h-6 w-6 rounded-full bg-fg/70 transition",
+                                          p.isActive && "translate-x-6 bg-gold2"
+                                        )}
+                                      />
+                                    </button>
+                                  </td>
+                                  <td className="p-3">
+                                    <div className="h-10 w-16 overflow-hidden rounded-lg border border-fg/10 bg-bg/35">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={p.image ?? "/products/placeholder.png"}
+                                        alt=""
+                                        className="h-full w-full object-cover"
+                                        loading="lazy"
+                                      />
+                                    </div>
+                                  </td>
+                                  <td className="p-3">
+                                    <div className="text-fg/95">{p.name}</div>
+                                    <div className="mt-1 text-xs text-muted">{p.id}</div>
+                                  </td>
+                                  <td className="p-3 text-muted">{p.planLabel ?? "—"}</td>
+                                  <td className={cn("p-3", p.showPrice === false ? "text-muted" : "text-gold2")}>
+                                    {p.showPrice === false ? "Contact for price" : formatPriceRs(p.price)}
+                                  </td>
+                                  <td className="p-3 text-muted">{p.availability}</td>
+                                  <td className="p-3">
+                                    <div className="flex gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => openEdit(p)}
+                                        className="rounded-full border border-fg/10 bg-panel/45 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDelete(p.id)}
+                                        className="rounded-full border border-fg/10 bg-bg/25 px-4 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-bg/30"
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
                     )}
                   </div>
                 ) : null}

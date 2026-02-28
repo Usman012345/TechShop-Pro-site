@@ -1,5 +1,17 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from "@/lib/adminAuth";
+
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+function safeNextPath(next: string | undefined | null) {
+  // Prevent open redirects.
+  if (!next) return "/admin";
+  if (!next.startsWith("/")) return "/admin";
+  if (next.startsWith("//")) return "/admin";
+  return next;
+}
 
 export default async function AdminLoginPage({
   searchParams,
@@ -8,9 +20,16 @@ export default async function AdminLoginPage({
   searchParams?: Promise<{ next?: string; error?: string; reason?: string }>;
 }) {
   const sp = searchParams ? await searchParams : undefined;
-  const next = sp?.next ?? "/admin";
+  const next = safeNextPath(sp?.next ?? "/admin");
   const error = sp?.error;
   const reason = sp?.reason;
+
+  // Already signed in? Skip the login form.
+  const cookieStore = await cookies();
+  const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+  if (verifyAdminSessionToken(token)) {
+    redirect(next);
+  }
 
   const errorMessage =
     error === "1"

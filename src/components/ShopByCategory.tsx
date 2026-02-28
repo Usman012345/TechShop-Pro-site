@@ -399,6 +399,14 @@ export function ShopByCategory({ categories, products }: ShopByCategoryProps) {
                               <div className="mt-1 text-xs text-muted">{p.planLabel}</div>
                             ) : null}
 
+                            {/* Price (shown on small cards too) */}
+                            <div className="mt-3 text-sm">
+                              <span className="text-muted">Price:</span>{" "}
+                              <span className={p.showPrice === false ? "text-muted" : "text-gold2"}>
+                                {p.showPrice === false ? "Contact for price" : formatPriceRs(p.price)}
+                              </span>
+                            </div>
+
                             {/* Tags */}
                             <div className="mt-3 flex flex-wrap items-center gap-2">
                               <span className="rounded-full border border-fg/10 bg-bg/25 px-3 py-1 text-[11px] text-muted">
