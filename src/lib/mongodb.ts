@@ -38,10 +38,19 @@ export async function getMongoClient(): Promise<MongoClient> {
   // Reuse the client across hot reloads in dev and across invocations in serverless.
   if (!globalThis._techshopMongoClientPromise) {
     const client = new MongoClient(uri, {
-      // Fail fast so the admin UI can show a useful error instead of hanging.
-      serverSelectionTimeoutMS: 8000,
+      // Keep pools small (Atlas free tier friendly) and fail reasonably fast.
+      // If Atlas is temporarily slow (cold cluster), allow a bit more time.
+      maxPoolSize: 5,
+      serverSelectionTimeoutMS: 15000,
     });
-    globalThis._techshopMongoClientPromise = client.connect();
+    // IMPORTANT:
+    // If the initial connection attempt fails and we cache the rejected promise,
+    // the process will stay "stuck" until the serverless instance is recycled.
+    // We clear the cached promise on failure so the next request can retry.
+    globalThis._techshopMongoClientPromise = client.connect().catch((err) => {
+      globalThis._techshopMongoClientPromise = undefined;
+      throw err;
+    });
   }
 
   return globalThis._techshopMongoClientPromise;

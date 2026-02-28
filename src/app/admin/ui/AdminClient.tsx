@@ -120,9 +120,9 @@ function Modal({
 }
 
 export function AdminClient({
-  persistenceEnabled,
+  storageStatus,
 }: {
-  persistenceEnabled: boolean;
+  storageStatus: { enabled: true } | { enabled: false; error: string };
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -502,13 +502,18 @@ export function AdminClient({
 
   return (
     <div className="grid gap-6">
-      {!persistenceEnabled ? (
+      {!storageStatus.enabled ? (
         <div className="rounded-3xl border border-gold/25 bg-gold/10 p-5 text-sm text-muted">
           <div className="font-display text-base text-gold2">MongoDB is not configured or not reachable</div>
           <p className="mt-1">
             The admin panel uses <span className="text-gold2">MongoDB</span> to store your live
             catalog and hashed admin credentials.
           </p>
+
+          <div className="mt-3 rounded-2xl border border-fg/10 bg-bg/25 p-3 text-xs text-muted">
+            <div className="font-display text-[11px] text-fg/90">Detected issue</div>
+            <div className="mt-1 leading-relaxed">{storageStatus.error}</div>
+          </div>
           <p className="mt-2 text-xs">
             Set <span className="text-gold2">MONGODB_URI</span> (and optionally
             <span className="text-gold2"> MONGODB_DB</span>) in Vercel → Project → Settings →
@@ -527,7 +532,7 @@ export function AdminClient({
       )}
 
       {/* Controls */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -581,8 +586,8 @@ export function AdminClient({
       </div>
 
       {/* Categories */}
-      <section className="rounded-3xl border border-fg/10 bg-panel/45 p-5 md:p-6">
-        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <section className="rounded-3xl border border-fg/10 bg-panel/45 p-5 sm:p-6">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <div className="text-xs uppercase tracking-[0.30em] text-muted">Categories</div>
             <div className="mt-2 font-display text-xl">Manage</div>
@@ -613,7 +618,7 @@ export function AdminClient({
         </div>
 
         {/* Mobile-friendly category cards */}
-        <div className="mt-4 grid gap-3 md:hidden">
+        <div className="mt-4 grid gap-3 lg:hidden">
           {categoriesView.map((c) => {
             const Icon = Icons[c.iconName] ?? Icons.Sparkles;
             return (
@@ -676,7 +681,7 @@ export function AdminClient({
         </div>
 
         {/* Desktop table */}
-        <div className="mt-4 hidden overflow-auto rounded-2xl border border-fg/10 md:block [-webkit-overflow-scrolling:touch]">
+        <div className="mt-4 hidden overflow-auto rounded-2xl border border-fg/10 lg:block [-webkit-overflow-scrolling:touch]">
           <table className="w-full min-w-[920px] border-collapse text-sm">
             <thead className="bg-bg/30">
               <tr className="text-left text-xs text-muted">
@@ -753,7 +758,7 @@ export function AdminClient({
       </section>
 
       {/* Products by category (dropdowns) */}
-      <section className="rounded-3xl border border-fg/10 bg-panel/45 p-5 md:p-6">
+      <section className="rounded-3xl border border-fg/10 bg-panel/45 p-5 sm:p-6">
         <div>
           <div className="text-xs uppercase tracking-[0.30em] text-muted">Products</div>
           <div className="mt-2 font-display text-xl">Manage by category</div>
@@ -835,7 +840,7 @@ export function AdminClient({
                     ) : (
                       <>
                         {/* Mobile-friendly product cards */}
-                        <div className="grid gap-3 md:hidden">
+                        <div className="grid gap-3 lg:hidden">
                           {list.map((p) => (
                             <div key={p.id} className="rounded-2xl border border-fg/10 bg-bg/25 p-4">
                               <div className="flex items-start gap-3">
@@ -916,7 +921,7 @@ export function AdminClient({
                         </div>
 
                         {/* Desktop table */}
-                        <div className="hidden overflow-auto rounded-2xl border border-fg/10 md:block [-webkit-overflow-scrolling:touch]">
+                        <div className="hidden overflow-auto rounded-2xl border border-fg/10 lg:block [-webkit-overflow-scrolling:touch]">
                           <table className="w-full min-w-[920px] border-collapse text-sm">
                             <thead className="bg-bg/30">
                               <tr className="text-left text-xs text-muted">
@@ -1011,7 +1016,7 @@ export function AdminClient({
       >
         {!catDraft ? null : (
           <div className="grid gap-4">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               <Field label="Category name">
                 <TextInput
                   value={catDraft.name}
@@ -1061,7 +1066,7 @@ export function AdminClient({
               </Field>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-3">
               <Field label="Icon">
                 <Select
                   value={catDraft.iconName}
@@ -1098,7 +1103,7 @@ export function AdminClient({
                   placeholder="1"
                 />
               </Field>
-              <div className="hidden md:block" />
+              <div className="hidden lg:block" />
             </div>
 
             <Field label="Description">
@@ -1139,7 +1144,7 @@ export function AdminClient({
       >
         {!draft ? null : (
           <div className="grid gap-4">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               <Field label="Product name">
                 <TextInput
                   value={draft.name}
@@ -1179,7 +1184,7 @@ export function AdminClient({
               </Field>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-3">
               <Field label="Category">
                 <Select
                   value={draft.categoryId}
@@ -1232,7 +1237,7 @@ export function AdminClient({
               </Field>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 lg:grid-cols-3">
               <Field label="Plan label (optional)">
                 <TextInput
                   value={draft.planLabel ?? ""}
@@ -1288,7 +1293,7 @@ export function AdminClient({
               </Field>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               <Field label="Product image">
                 <div className="grid gap-2">
                   <TextInput
@@ -1349,7 +1354,7 @@ export function AdminClient({
               </Field>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2">
               <Field label="Badges (comma separated)">
                 <TextInput
                   value={badgesInput}
@@ -1366,7 +1371,7 @@ export function AdminClient({
                 />
                 <div className="text-[11px] text-muted">Shown as tags on product cards.</div>
               </Field>
-              <div className="hidden md:block" />
+              <div className="hidden lg:block" />
             </div>
 
             <Field label="Short description (optional)">

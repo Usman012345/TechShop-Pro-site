@@ -1,12 +1,17 @@
-# TechShop Pro — Software Tools Shop (Next.js + Tailwind)
+# TechShop Pro — Storefront + Admin (Next.js + MongoDB)
 
-Showcase storefront built with:
+TechShop Pro is a **mobile‑first storefront** built with:
 
 - **Next.js (App Router) + TypeScript + Tailwind CSS**
-- **Luxury black + gold** UI
-- **4‑second full‑screen intro loader** (particle network + progress)
-- **Shop by category → popup modal** with **product cards (image + details + contact CTA)**
-- **Contact-only flow** (no checkout / no payments)
+- Luxury **black + gold** UI
+- **Shop by category → modal**
+  - small product cards (image + key info)
+  - clickable cards open a single **large product details** view
+- **Cart** (localStorage) + **quote-style checkout**
+  - totals are shown
+  - purchase is completed by contacting the seller (no online payments)
+- **Admin panel** (`/admin`) backed by **MongoDB**
+  - edits are reflected on the public site without redeploy
 
 ✅ Designed to deploy on **Vercel Free/Hobby tier**.
 
@@ -25,121 +30,101 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`
+Open:
 
-### Production-like preview
-
-```bash
-npm run preview
+```text
+http://localhost:3000
 ```
 
 ---
 
-## Deploy to Vercel
+## Environment variables
 
-1. Push this repository to GitHub.
-2. Vercel → **New Project** → Import.
-3. Framework should auto-detect **Next.js**.
-4. Deploy.
+Copy `/.env.example` → `.env.local` for local development.
 
-This repo includes API routes and an admin panel, so it deploys as a normal Next.js app.
+On Vercel, set the same variables in:
+
+- Project → Settings → Environment Variables
+
+### Required (for real persistence)
+
+- `MONGODB_URI`
+- `ADMIN_SESSION_SECRET`
+- `ADMIN_AUTH_KEY` (used to seed the first admin user)
+
+Recommended:
+
+- `MONGODB_DB` (default: `techshop_pro`)
+- `NEXT_PUBLIC_SITE_URL` (your real domain)
+
+### Optional
+
+- `BLOB_READ_WRITE_TOKEN` (only if you want Admin image uploads via Vercel Blob)
+
+Legacy/unused by default:
+
+- `GITHUB_*` env vars are only needed if you re-enable the GitHub publish route.
 
 ---
 
 ## Admin panel
 
-- URL: `/admin`
 - Login: `/admin/login`
+- Panel: `/admin`
 
-### MongoDB-backed admin auth + live catalog
+Admin session:
 
-This project uses **MongoDB** for:
+- lasts **1 hour** after login
 
-- **Admin credentials** (stored as a **bcrypt hash**)
-- **Live catalog** (categories + products) so CRUD works on Vercel serverless
+Admin data storage:
 
-Required env:
-
-- `MONGODB_URI`
-  - recommended: MongoDB Atlas connection string
-- `MONGODB_DB` (optional, default: `techshop_pro`)
-
-Admin env (used only to seed the *first* admin user in MongoDB if none exists):
-
-- `ADMIN_USERNAME` (default: `admin`)
-- `ADMIN_AUTH_KEY` (default: `T3ch$hopPr0`)
-- `ADMIN_SESSION_SECRET` — cookie signing secret
-
----
-
-### Uploading product images
-
-The product editor supports uploading images to **Vercel Blob** (recommended for Vercel Free/Hobby).
-
-Create a Blob store in Vercel → Storage. Vercel will inject:
-
-- `BLOB_READ_WRITE_TOKEN`
-
----
-
-## Editing the catalog
-
-Seed data lives in:
-
-- `src/data/catalogSeed.ts`
-
-Public storefront reads from a server-side catalog store seeded by that file:
-
-- `src/lib/catalogStore.ts`
-
-Admin CRUD writes to the catalog in MongoDB:
-
-- `src/lib/draftCatalogStore.ts`
-
-When MongoDB is configured, the storefront reads from MongoDB too, so edits are
-reflected immediately on the live site.
-
-Images live in:
-
-- `public/products/`
-
-If a product has no image, it falls back to:
-
-- `/products/placeholder.png`
+- admin credentials are stored in MongoDB as a **bcrypt hash**
+- catalog is stored in MongoDB so storefront updates are live
 
 ---
 
 ## Project structure
 
-```
+```text
 public/
-  products/                  # product card images
-  logos/                     # (optional) watermark logos
-  whatsapp-group-qr.png
-  techshoppro-logo.webp
+  products/                  # product images
+  logos/                     # watermark logos
+
 src/
   app/
-    page.tsx                 # known sections
-    admin/                   # admin UI routes
+    page.tsx                 # home sections
+    cart/page.tsx            # cart
+    admin/                   # admin routes
     api/                     # API routes
+
   components/
-    IntroSplash.tsx          # 4s loader
-    ParticleBackground.tsx   # particle network
-    ShopByCategory.tsx       # catalog modal UI
+    ShopByCategory.tsx       # category grid + modal + product open view
+    NavBar.tsx               # navbar + cart count + admin/login link
+    cart/                    # cart provider + cart page client UI
+
   data/
-    site.ts                  # contact details, WhatsApp helpers
+    site.ts                  # contact details + site metadata URL
     catalogSeed.ts           # seed catalog
+
   lib/
-    adminAuth.ts             # cookie signing/verification
-    adminUsers.ts            # MongoDB admin user (bcrypt)
-    mongodb.ts               # MongoDB connection helper
-    draftCatalogStore.ts     # MongoDB catalog storage (admin + storefront)
-    catalogStore.ts          # live catalog for storefront (Mongo + seed fallback)
+    mongodb.ts               # Mongo client helper
+    draftCatalogStore.ts     # Mongo-backed catalog storage
+    catalogStore.ts          # public catalog reader (Mongo + seed fallback)
+    adminAuth.ts             # signed cookie session
+    adminUsers.ts            # bcrypt admin user
+
+  types/
+    catalog.ts               # Catalog/Category/Product types
+
+  styles/
+    globals.css              # theme tokens + global styling
 ```
 
 ---
 
-## Notes
+## Low-level documentation
 
-- No order/checkout logic is included (contact-only).
-- Third‑party logos/images are used as demo assets. Replace them if you publish commercially.
+See:
+
+- `TECHSHOP_PRO_LOW_LEVEL_DOCUMENTATION.md`
+

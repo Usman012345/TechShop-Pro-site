@@ -1,5 +1,5 @@
 import { requireAdminOrRedirect } from "@/lib/adminAuth";
-import { isDraftStorageEnabled } from "@/lib/draftCatalogStore";
+import { getDraftStorageStatus } from "@/lib/draftCatalogStore";
 import { AdminClient } from "@/app/admin/ui/AdminClient";
 
 export const dynamic = "force-dynamic";
@@ -7,11 +7,11 @@ export const runtime = "nodejs";
 
 export default async function AdminPage() {
   await requireAdminOrRedirect();
-  const persistenceEnabled = await isDraftStorageEnabled();
+  const storageStatus = await getDraftStorageStatus();
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <div className="text-xs uppercase tracking-[0.30em] text-gold2/80">Admin Panel</div>
           <h1 className="mt-2 font-display text-2xl md:text-3xl">Catalog Manager</h1>
@@ -31,7 +31,7 @@ export default async function AdminPage() {
         </form>
       </div>
 
-      <AdminClient persistenceEnabled={persistenceEnabled} />
+      <AdminClient storageStatus={storageStatus} />
     </div>
   );
 }

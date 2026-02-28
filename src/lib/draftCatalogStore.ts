@@ -1,6 +1,7 @@
 import { CATALOG_SEED } from "@/data/catalogSeed";
 import type { Catalog, Category, CategoryId, Product } from "@/types/catalog";
 import { getMongoDb, isMongoConfigured } from "@/lib/mongodb";
+import { explainMongoError } from "@/lib/mongoErrors";
 
 /**
  * MongoDB-backed catalog storage.
@@ -85,6 +86,31 @@ export async function isDraftStorageEnabled() {
     return true;
   } catch {
     return false;
+  }
+}
+
+export type DraftStorageStatus =
+  | { enabled: true }
+  | { enabled: false; error: string };
+
+/**
+ * Same as isDraftStorageEnabled(), but returns a human-friendly reason when disabled.
+ * This is useful in production (Vercel) to debug Atlas Network Access / auth issues.
+ */
+export async function getDraftStorageStatus(): Promise<DraftStorageStatus> {
+  if (!isMongoConfigured()) {
+    return {
+      enabled: false,
+      error: "MONGODB_URI is not set in the environment.",
+    };
+  }
+
+  try {
+    const db = await getMongoDb();
+    await db.command({ ping: 1 });
+    return { enabled: true };
+  } catch (e) {
+    return { enabled: false, error: explainMongoError(e) };
   }
 }
 
