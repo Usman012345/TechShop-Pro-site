@@ -51,12 +51,12 @@ This repo includes API routes and an admin panel, so it deploys as a normal Next
 - URL: `/admin`
 - Login: `/admin/login`
 
-### MongoDB-backed admin auth + draft catalog
+### MongoDB-backed admin auth + live catalog
 
 This project uses **MongoDB** for:
 
 - **Admin credentials** (stored as a **bcrypt hash**)
-- **Draft catalog** (categories + products) so CRUD works on Vercel serverless
+- **Live catalog** (categories + products) so CRUD works on Vercel serverless
 
 Required env:
 
@@ -69,30 +69,6 @@ Admin env (used only to seed the *first* admin user in MongoDB if none exists):
 - `ADMIN_USERNAME` (default: `admin`)
 - `ADMIN_AUTH_KEY` (default: `T3ch$hopPr0`)
 - `ADMIN_SESSION_SECRET` — cookie signing secret
-
----
-
-### “Save all changes” → GitHub → Vercel auto‑redeploy
-
-The storefront uses a **published** catalog stored in:
-
-- `src/data/catalogSeed.ts`
-
-The admin panel edits a **draft** in MongoDB.
-
-When you click **Save all changes** in the admin panel, the server will:
-
-1. Read the draft catalog from MongoDB
-2. Commit it to GitHub by rewriting `src/data/catalogSeed.ts`
-3. Vercel will detect the commit and **redeploy automatically**
-
-To enable publishing, set:
-
-- `GITHUB_TOKEN` (fine‑grained token with Contents: Read & Write)
-- `GITHUB_OWNER`
-- `GITHUB_REPO`
-- `GITHUB_BRANCH` (default: `main`)
-- `GITHUB_CATALOG_PATH` (default: `src/data/catalogSeed.ts`)
 
 ---
 
@@ -116,9 +92,12 @@ Public storefront reads from a server-side catalog store seeded by that file:
 
 - `src/lib/catalogStore.ts`
 
-Admin CRUD writes to a draft catalog in MongoDB:
+Admin CRUD writes to the catalog in MongoDB:
 
 - `src/lib/draftCatalogStore.ts`
+
+When MongoDB is configured, the storefront reads from MongoDB too, so edits are
+reflected immediately on the live site.
 
 Images live in:
 
@@ -154,8 +133,8 @@ src/
     adminAuth.ts             # cookie signing/verification
     adminUsers.ts            # MongoDB admin user (bcrypt)
     mongodb.ts               # MongoDB connection helper
-    draftCatalogStore.ts     # MongoDB draft catalog for admin CRUD
-    catalogStore.ts          # published catalog for storefront
+    draftCatalogStore.ts     # MongoDB catalog storage (admin + storefront)
+    catalogStore.ts          # live catalog for storefront (Mongo + seed fallback)
 ```
 
 ---

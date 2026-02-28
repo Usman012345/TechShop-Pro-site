@@ -3,12 +3,12 @@ import type { Catalog, Category, CategoryId, Product } from "@/types/catalog";
 import { getMongoDb, isMongoConfigured } from "@/lib/mongodb";
 
 /**
- * Draft catalog storage.
+ * MongoDB-backed catalog storage.
  *
  * - Stored in MongoDB (required for Vercel/serverless persistence).
  * - Used by the admin panel for CRUD.
- * - The public website uses the *published* catalog from src/data/catalogSeed.ts
- *   (updated via the "Publish" action that commits to GitHub and triggers Vercel redeploy).
+ * - The public storefront also reads from this store, so admin edits are
+ *   reflected immediately on the live website.
  */
 
 type CatalogDoc = {
@@ -45,7 +45,22 @@ function setMemoryDraft(next: Catalog) {
 function normalizeCatalog(next: Catalog): Catalog {
   return {
     categories: Array.isArray(next.categories) ? next.categories : [],
-    products: Array.isArray(next.products) ? next.products : [],
+    products: Array.isArray(next.products)
+      ? next.products.map((p) => {
+          const raw = p as any;
+          return {
+            ...p,
+            // Backward-compat: older drafts/seed data may not have `price`.
+            // Default to 0.00 so the admin UI and storefront can rely on it.
+            price:
+              typeof raw.price === "number" && Number.isFinite(raw.price) ? raw.price : 0,
+
+            // Backward-compat: allow hiding the numeric price.
+            // If omitted, we default to showing the price.
+            showPrice: typeof raw.showPrice === "boolean" ? raw.showPrice : true,
+          };
+        })
+      : [],
   };
 }
 

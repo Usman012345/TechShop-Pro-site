@@ -1,14 +1,15 @@
 import { CATALOG_SEED } from "@/data/catalogSeed";
 import type { Catalog } from "@/types/catalog";
+import { getDraftCatalog } from "@/lib/draftCatalogStore";
 
 /**
- * Published catalog (public storefront).
+ * Live catalog (public storefront).
  *
- * IMPORTANT:
- * - The public site reads from src/data/catalogSeed.ts.
- * - The admin panel edits a *draft* copy stored in MongoDB.
- * - When you click "Save all changes" in admin, the draft is committed to GitHub
- *   by rewriting src/data/catalogSeed.ts, and Vercel redeploys.
+ * For Vercel/serverless deployments we cannot write to repo files at runtime.
+ * The live storefront reads the catalog from MongoDB (the same catalog the
+ * admin panel edits), so edits are reflected immediately on the website.
+ *
+ * Fallback: If MongoDB isn't configured/reachable, we fall back to the seed file.
  */
 
 function cloneSeed(): Catalog {
@@ -16,7 +17,11 @@ function cloneSeed(): Catalog {
 }
 
 export async function getPublishedCatalog(): Promise<Catalog> {
-  return cloneSeed();
+  try {
+    return await getDraftCatalog();
+  } catch {
+    return cloneSeed();
+  }
 }
 
 export async function getPublicCatalog(): Promise<Catalog> {

@@ -4,12 +4,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { X, ArrowRight } from "lucide-react";
 import { whatsappLink } from "@/data/site";
 import { Icons } from "@/components/icons";
-import { cn } from "@/lib/utils";
+import { cn, formatPriceRs } from "@/lib/utils";
 import type { Category, CategoryId, Product } from "@/types/catalog";
 
 function productMessage(p: Product) {
   const plan = p.planLabel ? `\nPlan: ${p.planLabel}` : "";
-  const price = p.priceLabel ? `\nPrice: ${p.priceLabel}` : "";
+  const priceText = p.showPrice === false ? "Contact for price" : formatPriceRs(p.price);
+  const price = `\nPrice: ${priceText}`;
   return `السلام عليكم\n\nI'm interested in:\n${p.name}${plan}${price}\n\nSent from TechShop Pro website.`;
 }
 
@@ -45,29 +46,75 @@ export type ShopByCategoryProps = {
 };
 
 export function ShopByCategory({ categories, products }: ShopByCategoryProps) {
+  // Keep a live copy so the storefront reflects admin edits immediately
+  // (even when navigating client-side or switching tabs).
+  const [liveCategories, setLiveCategories] = useState<Category[]>(categories);
+  const [liveProducts, setLiveProducts] = useState<Product[]>(products);
+
   const [openCategory, setOpenCategory] = useState<CategoryId | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
+  // Sync SSR/initial props → state
+  useEffect(() => {
+    setLiveCategories(categories);
+    setLiveProducts(products);
+  }, [categories, products]);
+
+  // Fetch latest catalog on mount + whenever the tab regains focus.
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const res = await fetch("/api/catalog", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json().catch(() => null)) as
+          | { categories: Category[]; products: Product[] }
+          | null;
+        if (!data || cancelled) return;
+        if (Array.isArray(data.categories)) setLiveCategories(data.categories);
+        if (Array.isArray(data.products)) setLiveProducts(data.products);
+      } catch {
+        // Ignore (offline / request aborted)
+      }
+    }
+
+    load();
+    const onFocus = () => load();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
   const activeCategory = useMemo(
-    () => categories.find((c) => c.id === openCategory) ?? null,
-    [openCategory, categories]
+    () => liveCategories.find((c) => c.id === openCategory) ?? null,
+    [openCategory, liveCategories]
   );
 
   const items = useMemo(() => {
     if (!openCategory) return [];
-    return products
+    return liveProducts
       .filter((p) => p.isActive && p.categoryId === openCategory)
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [openCategory, products]);
+  }, [openCategory, liveProducts]);
 
   const countByCategory = useMemo(() => {
     const m = new Map<CategoryId, number>();
-    for (const p of products) {
+    for (const p of liveProducts) {
       if (!p.isActive) continue;
       m.set(p.categoryId, (m.get(p.categoryId) ?? 0) + 1);
     }
     return (id: CategoryId) => m.get(id) ?? 0;
-  }, [products]);
+  }, [liveProducts]);
+
+  // If the currently open category was deleted, close the modal.
+  useEffect(() => {
+    if (!openCategory) return;
+    const exists = liveCategories.some((c) => c.id === openCategory);
+    if (!exists) setOpenCategory(null);
+  }, [liveCategories, openCategory]);
 
   // Close on ESC + lock scroll while modal is open.
   useEffect(() => {
@@ -116,7 +163,7 @@ export function ShopByCategory({ categories, products }: ShopByCategoryProps) {
       </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {categories.map((c) => {
+        {liveCategories.map((c) => {
           const Icon = Icons[c.iconName];
           const count = countByCategory(c.id);
           return (
@@ -237,7 +284,15 @@ export function ShopByCategory({ categories, products }: ShopByCategoryProps) {
                       ) : null}
 
                       <div className="mt-3 flex items-center justify-between gap-3">
-                        <div className="text-sm text-gold2">{p.priceLabel ?? "Contact"}</div>
+                        {/* Price */}
+                        <div
+                          className={cn(
+                            "text-sm",
+                            p.showPrice === false ? "text-muted" : "text-gold2"
+                          )}
+                        >
+                          {p.showPrice === false ? "Contact for price" : formatPriceRs(p.price)}
+                        </div>
                         <div className="text-xs text-muted">{availabilityLabel(p)}</div>
                       </div>
 

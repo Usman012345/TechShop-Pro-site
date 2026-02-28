@@ -44,7 +44,23 @@ export type Product = {
   /** Optional watermark logo (SVG usually) stored in /public/logos. */
   logo?: string;
 
-  /** Display values (no currency math; display-only). */
+  /**
+   * Price (display-only).
+   *
+   * - Stored as a number to keep admin editing simple.
+   * - No checkout/currency math is implemented in this project.
+   */
+  price: number;
+
+  /**
+   * Controls whether the numeric price is shown on the storefront.
+   *
+   * - If set to false, the UI will display "Contact for price" instead.
+   * - If omitted, defaults to true (backward-compatible).
+   */
+  showPrice?: boolean;
+
+  /** Optional display string (legacy/extra text). */
   priceLabel?: string;
   planLabel?: string;
 

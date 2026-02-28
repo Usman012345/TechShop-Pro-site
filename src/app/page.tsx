@@ -5,6 +5,7 @@ import { ContactSection } from "@/components/ContactSection";
 import { getPublicCatalog } from "@/lib/catalogStore";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export default async function HomePage() {
   const catalog = await getPublicCatalog();

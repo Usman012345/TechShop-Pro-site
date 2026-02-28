@@ -196,3 +196,17 @@ html {
     animation: none;
   }
 }
+
+/*
+  Admin UX: hide number input spinners so price fields behave like plain text entry.
+  (Users can still type digits/decimals; arrows are removed.)
+*/
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

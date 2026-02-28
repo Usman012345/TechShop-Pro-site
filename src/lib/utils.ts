@@ -9,9 +9,13 @@ export function formatPriceRs(priceRs: number | null | undefined) {
   if (priceRs == null) return "Contact";
   try {
     // Keep it simple: PKR formatting without currency symbol assumes "Rs".
-    return `Rs ${priceRs.toLocaleString("en-PK")}`;
+    // Always show 2 decimals (e.g., 0.00).
+    return `Rs ${priceRs.toLocaleString("en-PK", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
   } catch {
-    return `Rs ${priceRs}`;
+    return `Rs ${Number.isFinite(priceRs) ? priceRs.toFixed(2) : priceRs}`;
   }
 }
 

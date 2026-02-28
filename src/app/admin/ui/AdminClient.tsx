@@ -6,7 +6,7 @@ import type { IconName } from "@/components/icons";
 import type { PutBlobResult } from "@vercel/blob";
 import { Icons } from "@/components/icons";
 import { ChevronDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatPriceRs } from "@/lib/utils";
 
 type ApiCatalogResponse = { ok: true; catalog: Catalog } | { ok: false; error: string };
 
@@ -142,10 +142,7 @@ export function AdminClient({
   const [editOpen, setEditOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [draft, setDraft] = useState<Product | null>(null);
-
-  const [publishing, setPublishing] = useState(false);
-  const [publishMsg, setPublishMsg] = useState<string | null>(null);
-  const [publishCommitUrl, setPublishCommitUrl] = useState<string | null>(null);
+  const [priceInput, setPriceInput] = useState<string>("0.00");
 
   const [imageUploading, setImageUploading] = useState(false);
   const [imageUploadError, setImageUploadError] = useState<string | null>(null);
@@ -294,36 +291,6 @@ export function AdminClient({
     setOpenCategoryIds(next);
   }
 
-  async function publishAllChanges() {
-    const ok = confirm(
-      "Publish your draft catalog to GitHub? This will create a commit and Vercel will redeploy automatically."
-    );
-    if (!ok) return;
-
-    setPublishing(true);
-    setPublishMsg(null);
-    setPublishCommitUrl(null);
-
-    try {
-      const res = await fetch("/api/admin/publish", { method: "POST" });
-      const data = (await res.json().catch(() => null)) as
-        | { ok: true; commitUrl?: string }
-        | { ok: false; error: string }
-        | null;
-      if (!res.ok || !data || data.ok === false) {
-        throw new Error((data as any)?.error ?? "Publish failed");
-      }
-      setPublishMsg(
-        "Published to GitHub. Vercel will redeploy automatically when it detects the new commit."
-      );
-      if (data.commitUrl) setPublishCommitUrl(data.commitUrl);
-    } catch (e) {
-      setPublishMsg(e instanceof Error ? e.message : "Publish failed");
-    } finally {
-      setPublishing(false);
-    }
-  }
-
   async function uploadProductImage(file: File) {
     setImageUploading(true);
     setImageUploadError(null);
@@ -405,6 +372,7 @@ export function AdminClient({
   function openEdit(p: Product) {
     setEditing(p);
     setDraft(structuredClone(p));
+    setPriceInput(Number.isFinite(p.price) ? p.price.toFixed(2) : "0.00");
     setImageUploadError(null);
     setEditOpen(true);
   }
@@ -417,10 +385,12 @@ export function AdminClient({
       availability: "available",
       isActive: true,
       image: "/products/placeholder.png",
-      priceLabel: "Available",
+      price: 0,
+      showPrice: true,
     };
     setEditing(null);
     setDraft(base);
+    setPriceInput("0.00");
     setImageUploadError(null);
     setEditOpen(true);
   }
@@ -523,7 +493,7 @@ export function AdminClient({
         <div className="rounded-3xl border border-gold/25 bg-gold/10 p-5 text-sm text-muted">
           <div className="font-display text-base text-gold2">MongoDB is not configured or not reachable</div>
           <p className="mt-1">
-            The admin panel uses <span className="text-gold2">MongoDB</span> to store your draft
+            The admin panel uses <span className="text-gold2">MongoDB</span> to store your live
             catalog and hashed admin credentials.
           </p>
           <p className="mt-2 text-xs">
@@ -535,11 +505,10 @@ export function AdminClient({
         </div>
       ) : (
         <div className="rounded-3xl border border-fg/10 bg-panel/45 p-5 text-sm text-muted">
-          <div className="font-display text-base text-fg/95">Draft is saved in MongoDB</div>
+          <div className="font-display text-base text-fg/95">Catalog is saved in MongoDB</div>
           <p className="mt-1">
-            Your edits are saved as a <span className="text-gold2">draft</span>. When you're
-            ready to update the live site, click <span className="text-gold2">Save all changes</span>
-            to publish to GitHub and trigger a Vercel redeploy.
+            Your edits are <span className="text-gold2">live</span> immediately. The storefront reads
+            the catalog from MongoDB, so any changes you save here will show on the website right away.
           </p>
         </div>
       )}
@@ -553,19 +522,6 @@ export function AdminClient({
             className="inline-flex h-11 items-center justify-center rounded-full border border-gold/30 bg-gold/15 px-5 text-sm text-gold2 shadow-gold transition hover:border-gold/50 hover:bg-gold/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/80"
           >
             + Add product
-          </button>
-
-          <button
-            type="button"
-            onClick={publishAllChanges}
-            disabled={publishing}
-            className={cn(
-              "inline-flex h-11 items-center justify-center rounded-full border border-fg/10 bg-panel/45 px-5 text-sm text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70",
-              publishing && "opacity-60 pointer-events-none"
-            )}
-            title="Commit draft catalog to GitHub to trigger a Vercel redeploy"
-          >
-            {publishing ? "Saving…" : "Save all changes"}
           </button>
 
           <button
@@ -610,23 +566,6 @@ export function AdminClient({
           Refresh
         </button>
       </div>
-
-      {publishMsg ? (
-        <div className="rounded-2xl border border-fg/10 bg-bg/25 p-4 text-sm text-muted">
-          <div className="font-display text-base text-fg/95">Publish</div>
-          <p className="mt-1">{publishMsg}</p>
-          {publishCommitUrl ? (
-            <a
-              href={publishCommitUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex text-sm text-gold2 underline underline-offset-4"
-            >
-              View commit on GitHub
-            </a>
-          ) : null}
-        </div>
-      ) : null}
 
       {/* Categories */}
       <section className="rounded-3xl border border-fg/10 bg-panel/45 p-5 md:p-6">
@@ -865,7 +804,7 @@ export function AdminClient({
                                   <div className="mt-1 text-xs text-muted">{p.id}</div>
                                 </td>
                                 <td className="p-3 text-muted">{p.planLabel ?? "—"}</td>
-                                <td className="p-3 text-gold2">{p.priceLabel ?? "—"}</td>
+                                <td className={cn("p-3", p.showPrice === false ? "text-muted" : "text-gold2")}>{p.showPrice === false ? "Contact for price" : formatPriceRs(p.price)}</td>
                                 <td className="p-3 text-muted">{p.availability}</td>
                                 <td className="p-3">
                                   <div className="flex gap-2">
@@ -1128,7 +1067,7 @@ export function AdminClient({
               </Field>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
               <Field label="Plan label (optional)">
                 <TextInput
                   value={draft.planLabel ?? ""}
@@ -1138,14 +1077,49 @@ export function AdminClient({
                   placeholder="e.g., 2 Years • Unlimited Devices"
                 />
               </Field>
-              <Field label="Price label (optional)">
+
+              <Field label="Price display">
+                <Select
+                  value={draft.showPrice === false ? "contact" : "show"}
+                  onChange={(e) => {
+                    const mode = e.target.value;
+                    setDraft((d) => (d ? { ...d, showPrice: mode === "show" } : d));
+                  }}
+                >
+                  <option value="show">Show numeric price</option>
+                  <option value="contact">Contact for price</option>
+                </Select>
+              </Field>
+
+              <Field label="Price (Rs)">
                 <TextInput
-                  value={draft.priceLabel ?? ""}
-                  onChange={(e) =>
-                    setDraft((d) => (d ? { ...d, priceLabel: e.target.value } : d))
-                  }
-                  placeholder="e.g., Rs 2000"
+                  type="text"
+                  inputMode="decimal"
+                  value={priceInput}
+                  disabled={draft.showPrice === false}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+
+                    // Allow empty, digits, and a single decimal point (up to 2 decimals).
+                    if (!/^\d*(\.\d{0,2})?$/.test(raw)) return;
+
+                    setPriceInput(raw);
+                    const next = raw === "" || raw === "." ? 0 : Number(raw);
+                    setDraft((d) => (d ? { ...d, price: Number.isFinite(next) ? next : 0 } : d));
+                  }}
+                  onBlur={() => {
+                    setPriceInput((v) => {
+                      const n = Number(v);
+                      if (!Number.isFinite(n)) return "0.00";
+                      return n.toFixed(2);
+                    });
+                  }}
+                  placeholder="0.00"
                 />
+                <div className="text-[11px] text-muted">
+                  Preview:{" "}
+                  {draft.showPrice === false ? "Contact for price" : formatPriceRs(draft.price)}
+                </div>
               </Field>
             </div>
 

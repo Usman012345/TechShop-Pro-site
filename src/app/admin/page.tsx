@@ -17,7 +17,7 @@ export default async function AdminPage() {
           <h1 className="mt-2 font-display text-2xl md:text-3xl">Catalog Manager</h1>
           <p className="mt-2 max-w-2xl text-sm text-muted">
             Manage categories and products for your storefront. For persistence on Vercel, configure
-            Vercel KV (or Upstash Redis REST) environment variables.
+            MongoDB environment variables.
           </p>
         </div>
 
