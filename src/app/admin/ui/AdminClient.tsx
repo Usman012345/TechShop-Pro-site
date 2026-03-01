@@ -49,7 +49,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="grid gap-2">
+    <label className="grid min-w-0 gap-2">
       <span className="text-xs text-muted">{label}</span>
       {children}
     </label>
@@ -57,7 +57,7 @@ function Field({
 }
 
 const inputClass =
-  "h-11 rounded-xl border border-fg/10 bg-bg/35 px-4 text-sm text-fg placeholder:text-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70";
+  "h-11 w-full min-w-0 rounded-xl border border-fg/10 bg-bg/35 px-4 text-sm text-fg placeholder:text-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70";
 
 function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cn(inputClass, props.className)} />;
@@ -68,7 +68,7 @@ function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
     <textarea
       {...props}
       className={cn(
-        "min-h-[92px] rounded-xl border border-fg/10 bg-bg/35 px-4 py-3 text-sm text-fg placeholder:text-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70",
+        "min-h-[92px] w-full min-w-0 rounded-xl border border-fg/10 bg-bg/35 px-4 py-3 text-sm text-fg placeholder:text-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70",
         props.className
       )}
     />
@@ -80,7 +80,7 @@ function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
     <select
       {...props}
       className={cn(
-        "h-11 rounded-xl border border-fg/10 bg-bg/35 px-4 text-sm text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70",
+        "h-11 w-full min-w-0 rounded-xl border border-fg/10 bg-bg/35 px-4 text-sm text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70",
         props.className
       )}
     />
@@ -111,7 +111,7 @@ function Modal({
         <div className="border-b border-fg/10 bg-bg/35 px-6 py-4 sm:backdrop-blur">
           <div className="font-display text-xl text-gold2">{title}</div>
         </div>
-        <div className="max-h-[78svh] overflow-auto overscroll-contain p-6 [-webkit-overflow-scrolling:touch]">
+        <div className="max-h-[78svh] overflow-y-auto overflow-x-hidden overscroll-contain p-4 sm:p-6 [-webkit-overflow-scrolling:touch]">
           {children}
         </div>
       </div>
@@ -512,7 +512,7 @@ export function AdminClient({
 
           <div className="mt-3 rounded-2xl border border-fg/10 bg-bg/25 p-3 text-xs text-muted">
             <div className="font-display text-[11px] text-fg/90">Detected issue</div>
-            <div className="mt-1 leading-relaxed">{storageStatus.error}</div>
+            <div className="mt-1 break-words whitespace-pre-wrap leading-relaxed">{storageStatus.error}</div>
           </div>
           <p className="mt-2 text-xs">
             Set <span className="text-gold2">MONGODB_URI</span> (and optionally
@@ -618,7 +618,7 @@ export function AdminClient({
         </div>
 
         {/* Mobile-friendly category cards */}
-        <div className="mt-4 grid gap-3 lg:hidden">
+        <div className="mt-4 grid gap-3 xl:hidden">
           {categoriesView.map((c) => {
             const Icon = Icons[c.iconName] ?? Icons.Sparkles;
             return (
@@ -631,7 +631,7 @@ export function AdminClient({
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="min-w-0 truncate font-display text-base text-fg/95">{c.name}</div>
-                      <span className="rounded-full border border-fg/10 bg-bg/20 px-3 py-1 text-[11px] text-muted">
+                      <span className="break-words rounded-full border border-fg/10 bg-bg/20 px-3 py-1 text-[11px] text-muted">
                         {c.id}
                       </span>
                     </div>
@@ -681,7 +681,7 @@ export function AdminClient({
         </div>
 
         {/* Desktop table */}
-        <div className="mt-4 hidden overflow-auto rounded-2xl border border-fg/10 lg:block [-webkit-overflow-scrolling:touch]">
+        <div className="mt-4 hidden overflow-auto rounded-2xl border border-fg/10 xl:block [-webkit-overflow-scrolling:touch]">
           <table className="w-full min-w-[920px] border-collapse text-sm">
             <thead className="bg-bg/30">
               <tr className="text-left text-xs text-muted">
@@ -805,7 +805,7 @@ export function AdminClient({
                     </span>
                     <div className="min-w-0">
                       <div className="truncate font-display text-base text-fg/95">{c.name}</div>
-                      <div className="mt-1 text-xs text-muted">
+                      <div className="mt-1 break-words text-xs text-muted">
                         {c.id} • {list.length} total • {activeCount} active
                       </div>
                     </div>
@@ -840,7 +840,7 @@ export function AdminClient({
                     ) : (
                       <>
                         {/* Mobile-friendly product cards */}
-                        <div className="grid gap-3 lg:hidden">
+                        <div className="grid gap-3 xl:hidden">
                           {list.map((p) => (
                             <div key={p.id} className="rounded-2xl border border-fg/10 bg-bg/25 p-4">
                               <div className="flex items-start gap-3">
@@ -858,7 +858,7 @@ export function AdminClient({
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="min-w-0">
                                       <div className="truncate font-display text-base text-fg/95">{p.name}</div>
-                                      <div className="mt-1 text-xs text-muted">{p.id}</div>
+                                      <div className="mt-1 break-words text-xs text-muted">{p.id}</div>
                                       {p.planLabel ? (
                                         <div className="mt-1 text-xs text-muted">{p.planLabel}</div>
                                       ) : null}
@@ -921,7 +921,7 @@ export function AdminClient({
                         </div>
 
                         {/* Desktop table */}
-                        <div className="hidden overflow-auto rounded-2xl border border-fg/10 lg:block [-webkit-overflow-scrolling:touch]">
+                        <div className="hidden overflow-auto rounded-2xl border border-fg/10 xl:block [-webkit-overflow-scrolling:touch]">
                           <table className="w-full min-w-[920px] border-collapse text-sm">
                             <thead className="bg-bg/30">
                               <tr className="text-left text-xs text-muted">
@@ -968,7 +968,7 @@ export function AdminClient({
                                   </td>
                                   <td className="p-3">
                                     <div className="text-fg/95">{p.name}</div>
-                                    <div className="mt-1 text-xs text-muted">{p.id}</div>
+                                    <div className="mt-1 break-words text-xs text-muted">{p.id}</div>
                                   </td>
                                   <td className="p-3 text-muted">{p.planLabel ?? "—"}</td>
                                   <td className={cn("p-3", p.showPrice === false ? "text-muted" : "text-gold2")}>
@@ -1030,6 +1030,7 @@ export function AdminClient({
               <Field label="Category id (slug)">
                 <div className="flex gap-2">
                   <TextInput
+                    className="flex-1 min-w-0"
                     value={catDraft.id}
                     onChange={(e) =>
                       setCatDraft((d) => (d ? { ...d, id: e.target.value } : d))
@@ -1158,6 +1159,7 @@ export function AdminClient({
               <Field label="Product id (slug)">
                 <div className="flex gap-2">
                   <TextInput
+                    className="flex-1 min-w-0"
                     value={draft.id}
                     onChange={(e) =>
                       setDraft((d) => (d ? { ...d, id: e.target.value } : d))

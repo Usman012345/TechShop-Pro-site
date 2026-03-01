@@ -66,7 +66,7 @@ export function NavBar() {
           </Link>
         </div>
 
-        <div className="no-scrollbar mt-3 flex w-full items-center gap-2 overflow-x-auto whitespace-nowrap py-1 [-webkit-overflow-scrolling:touch] sm:mt-0 sm:w-auto sm:flex-wrap sm:justify-end sm:overflow-visible">
+        <div className="mt-3 flex w-full flex-wrap items-center gap-2 py-1 sm:mt-0 sm:w-auto sm:justify-end">
           <Link
             href="/#categories"
             className="shrink-0 rounded-full border border-fg/10 bg-panel/40 px-3 py-2 text-xs text-fg/90 transition hover:border-fg/20 hover:bg-panel/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/70 sm:px-4 sm:text-sm"
