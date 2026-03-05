@@ -8,6 +8,7 @@ import { ScrollProgress } from "@/components/ScrollProgress";
 import { IntroSplashOnce } from "@/components/IntroSplashOnce";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const fontSans = Inter({
   subsets: ["latin"],
@@ -71,6 +72,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         {/* Vercel Web Analytics */}
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
